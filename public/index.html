@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dobierz mi bilet — Kreator Biletu GZM</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🚌</div>
+                <div>
+                    <div class="logo-text">Dobierz mi bilet</div>
+                    <div class="logo-sub">Kreator Biletów GZM</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- WELCOME SCREEN -->
+        <div id="screen-welcome" class="screen" style="display: block;">
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="card-title">Witaj w Kreatorze Biletów GZM!</h1>
+                    <p class="card-subtitle">Wybierz, co chcesz zrobić:</p>
+                </div>
+                <div class="card-body">
+                    <div class="options-grid col2">
+                        <button class="option-card" onclick="startMode('wizard')">
+                            <span class="oc-icon">🎫</span>
+                            <div class="oc-title">Kreator Biletu</div>
+                            <div class="oc-desc">5 kroków do idealnego biletu</div>
+                        </button>
+                        <button class="option-card" onclick="startMode('route')">
+                            <span class="oc-icon">🗺️</span>
+                            <div class="oc-title">Planer Trasy</div>
+                            <div class="oc-desc">Analiza konkretnej podróży</div>
+                        </button>
+                        <button class="option-card" onclick="startMode('comparator')">
+                            <span class="oc-icon">📊</span>
+                            <div class="oc-title">Porównaj Bilety</div>
+                            <div class="oc-desc">Wszystkie bilety GZM</div>
+                        </button>
+                        <button class="option-card" onclick="showUlgi()">
+                            <span class="oc-icon">🎓</span>
+                            <div class="oc-title">Sprawdź Ulgi</div>
+                            <div class="oc-desc">Przejazdy bezpłatne</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIZARD SCREEN -->
+        <div id="screen-wizard" class="screen" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Kreator Biletu</h2>
+                </div>
+                <div class="card-body">
+                    <div id="wizard-content"></div>
+                    <button class="button btn-secondary" onclick="showScreen('welcome')" style="margin-top: 20px;">← Wróć</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROUTE PLANNER SCREEN -->
+        <div id="screen-route" class="screen" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Planer Trasy</h2>
+                    <p class="card-subtitle">Wpisz przystanek początkowy i docelowy</p>
+                </div>
+                <div class="card-body">
+                    <div class="route-wrap">
+                        <div class="route-row">
+                            <div class="route-dot from"></div>
+                            <input class="route-input" id="inp-from" placeholder="Przystanek początkowy..." autocomplete="off" oninput="onAcInput('from')" onkeydown="onAcKey(event,'from')">
+                            <div class="ac-dropdown" id="ac-from"></div>
+                        </div>
+                        <div class="route-row">
+                            <div class="route-dot to"></div>
+                            <input class="route-input" id="inp-to" placeholder="Przystanek docelowy..." autocomplete="off" oninput="onAcInput('to')" onkeydown="onAcKey(event,'to')">
+                            <div class="ac-dropdown" id="ac-to"></div>
+                        </div>
+                    </div>
+
+                    <div id="route-results" style="margin-top: 20px;"></div>
+
+                    <div class="nav" style="margin-top: 20px;">
+                        <button class="button btn-secondary" onclick="showScreen('welcome')">← Wróć</button>
+                        <button class="button btn-primary" onclick="analyzeRoute()">🔍 Analizuj Trasę</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARATOR SCREEN -->
+        <div id="screen-comparator" class="screen" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Porównywarka Biletów</h2>
+                    <p class="card-subtitle">Wszystkie bilety GZM w jednym miejscu</p>
+                </div>
+                <div class="card-body">
+                    <div class="compare-grid" id="comparator-grid"></div>
+                    <button class="button btn-secondary" onclick="showScreen('welcome')" style="margin-top: 20px;">← Wróć</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ULGI SCREEN -->
+        <div id="screen-ulgi" class="screen" style="display: none;">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Ulgi i Przejazdy Bezpłatne</h2>
+                    <p class="card-subtitle">Sprawdź czy przysługuje Ci ulga lub bezpłatny przejazd</p>
+                </div>
+                <div class="card-body">
+                    <div id="ulgi-content"></div>
+                    <button class="button btn-secondary" onclick="showScreen('welcome')" style="margin-top: 20px;">← Wróć</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="wizard.js"></script>
+    <script src="comparator.js"></script>
+</body>
+</html>
