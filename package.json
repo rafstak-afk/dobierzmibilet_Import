@@ -1,13 +1,14 @@
 {
   "name": "dobierzmibilet",
   "version": "1.0.0",
-  "description": "Dobierz mi bilet — GZM ticket advisor",
+  "description": "Dobierz mi bilet — GZM ticket advisor z pełnym GTFS ZTM",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "adm-zip": "^0.5.12"
   },
   "engines": {
     "node": ">=18"
