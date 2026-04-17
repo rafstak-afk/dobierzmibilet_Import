@@ -1,7 +1,0 @@
-{
-  "name": "dobierzmibilet",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "npx serve@latest dist --single --listen $PORT"
-  }
-}
