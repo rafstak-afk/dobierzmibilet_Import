@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dobierz mi bilet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:#1a56db;--blue-light:#e8f0fe;--blue-mid:#3b82f6;
+  --navy:#0f172a;--slate:#475569;--slate-light:#94a3b8;
+  --bg:#f8fafc;--white:#ffffff;--border:#e2e8f0;--border-focus:#93c5fd;
+  --green:#16a34a;--green-light:#dcfce7;--amber:#d97706;--amber-light:#fef3c7;
+  --red:#dc2626;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --shadow:0 4px 16px rgba(0,0,0,0.08),0 1px 4px rgba(0,0,0,0.04);
+  --radius:14px;--radius-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;color:var(--navy);-webkit-font-smoothing:antialiased;}
+
+.header{background:var(--navy);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:white;}
+.logo-text{font-size:15px;font-weight:600;color:white;letter-spacing:-0.02em;}
+.logo-sub{font-size:11px;color:#94a3b8;}
+.header-tabs{display:flex;gap:4px;}
+.header-tab{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;color:#94a3b8;cursor:pointer;border:none;background:transparent;transition:color .15s,background .15s;font-family:'DM Sans',sans-serif;}
+.header-tab:hover,.header-tab.active{color:white;background:rgba(255,255,255,0.12);}
+
+.gtfs-bar{background:#1e293b;border-bottom:1px solid #334155;padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:12px;color:#64748b;}
+.gtfs-dot{width:7px;height:7px;border-radius:50%;background:#64748b;flex-shrink:0;}
+.gtfs-dot.ok{background:var(--green);}
+.gtfs-dot.loading{background:var(--amber);animation:pulse .9s ease-in-out infinite;}
+.gtfs-dot.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.gtfs-bar span{color:#94a3b8;}
+
+.container{max-width:820px;margin:0 auto;padding:28px 20px 60px;}
+.view{display:none;}.view.active{display:block;}
+
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;}
+.card-header{padding:20px 24px 0;}
+.card-body{padding:20px 24px 24px;}
+.step-label{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.card-title{font-size:20px;font-weight:600;color:var(--navy);letter-spacing:-.03em;}
+.card-subtitle{font-size:14px;color:var(--slate);margin-top:4px;}
+
+.progress-wrap{padding:16px 24px 0;}
+.progress-bar{height:3px;background:var(--border);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--blue);border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.progress-steps{display:flex;justify-content:space-between;margin-top:8px;}
+.progress-step-label{font-size:10px;color:var(--slate-light);font-weight:500;}
+.progress-step-label.active{color:var(--blue);}
+
+.options-grid{display:grid;gap:10px;margin-top:16px;}
+.options-grid.col2{grid-template-columns:1fr 1fr;}
+.option-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;text-align:left;width:100%;position:relative;}
+.option-card:hover{border-color:var(--blue-mid);background:#f8fbff;transform:translateY(-1px);}
+.option-card.selected{border-color:var(--blue);background:var(--blue-light);}
+.option-card .oc-icon{font-size:18px;margin-bottom:4px;display:block;}
+.option-card .oc-title{font-size:13px;font-weight:600;color:var(--navy);}
+.option-card .oc-desc{font-size:11.5px;color:var(--slate);margin-top:2px;line-height:1.35;}
+.option-card .oc-price{font-size:12px;font-weight:600;color:var(--green);margin-top:4px;}
+.option-card.selected .oc-title{color:var(--blue);}
+.check-badge{position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--blue);display:none;align-items:center;justify-content:center;}
+.check-badge svg{width:10px;height:10px;stroke:white;stroke-width:2.5;fill:none;}
+.option-card.selected .check-badge{display:flex;}
+
+.btn{padding:11px 22px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.btn-primary{background:var(--blue);color:white;}
+.btn-primary:hover{background:#1447c0;}
+.btn-primary:disabled{background:#c7d7f5;cursor:not-allowed;color:#8faee0;}
+.btn-secondary{background:transparent;color:var(--slate);border:1.5px solid var(--border);}
+.btn-secondary:hover{border-color:var(--slate);color:var(--navy);}
+.btn-ghost{background:transparent;color:var(--blue);font-size:13px;padding:8px 0;}
+.btn-ghost:hover{text-decoration:underline;}
+.nav{display:flex;gap:10px;margin-top:20px;align-items:center;}
+
+/* ROUTE PLANNER */
+.route-wrap{margin-top:16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:visible;position:relative;}
+.route-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:white;position:relative;}
+.route-row+.route-row{border-top:1px solid var(--border);}
+.route-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.route-dot.from{background:var(--blue);}
+.route-dot.to{border:2px solid var(--green);background:transparent;}
+.route-input{flex:1;border:none;outline:none;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--navy);background:transparent;}
+.route-input::placeholder{color:var(--slate-light);}
+.route-swap{background:var(--bg);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:14px;color:var(--slate);transition:background .15s;}
+.route-swap:hover{background:var(--border);}
+
+/* AUTOCOMPLETE */
+.ac-dropdown{position:absolute;left:0;right:0;top:100%;z-index:200;background:white;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);box-shadow:var(--shadow);max-height:220px;overflow-y:auto;display:none;}
+.ac-item{padding:10px 14px;font-size:14px;color:var(--navy);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.active{background:var(--blue-light);color:var(--blue);}
+.ac-item .ac-stop-name{font-weight:500;}
+.ac-item .ac-stop-city{font-size:12px;color:var(--slate);margin-top:1px;}
+.ac-icon{font-size:13px;flex-shrink:0;}
+.ac-empty{padding:12px 14px;font-size:13px;color:var(--slate);}
+
+/* AI LOADING */
+.ai-loading{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--blue-light);border-radius:var(--radius-sm);margin-top:12px;font-size:13px;color:var(--blue);}
+.spinner{width:16px;height:16px;border:2px solid #c7d7f5;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.route-result{background:white;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:12px;overflow:hidden;}
+.route-result-header{background:var(--navy);padding:14px 18px;display:flex;align-items:center;gap:10px;}
+.route-result-header .rr-from{font-size:13px;color:#93c5fd;}
+.route-result-header .rr-arrow{color:#475569;font-size:13px;}
+.route-result-header .rr-to{font-size:13px;color:#86efac;}
+.route-result-body{padding:16px 18px;}
+.route-result-body .rr-text{font-size:14px;line-height:1.7;color:var(--navy);}
+.route-result-body .rr-text strong{color:var(--blue);}
+
+/* TICKET RECOMMENDATIONS */
+.rec-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;}
+.rec-card{border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+.rec-card:hover{border-color:var(--blue-mid);background:#f8fbff;}
+.rec-card.best{border-color:var(--blue);background:var(--blue-light);}
+.rec-card .rc-label{font-size:11px;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.rec-card .rc-name{font-size:13px;font-weight:600;color:var(--navy);}
+.rec-card .rc-price{font-size:18px;font-weight:600;color:var(--navy);font-family:'DM Mono',monospace;margin-top:4px;}
+.rec-card .rc-note{font-size:11px;color:var(--slate);margin-top:3px;}
+.rec-card.best .rc-price{color:var(--blue);}
+
+/* RESULT CARD */
+.result-hero{background:linear-gradient(135deg,var(--navy) 0%,#1e3a5f 100%);padding:24px;position:relative;overflow:hidden;}
+.result-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:rgba(59,130,246,.15);border-radius:50%;}
+.result-hero-label{font-size:11px;font-weight:600;color:#93c5fd;text-transform:uppercase;letter-spacing:.08em;}
+.result-hero-name{font-size:24px;font-weight:600;color:white;margin-top:4px;letter-spacing:-.03em;}
+.result-hero-scope{font-size:13px;color:#93c5fd;margin-top:4px;}
+.result-body{padding:20px 24px;}
+.price-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);}
+.price-row:last-child{border-bottom:none;}
+.price-label{font-size:13px;color:var(--slate);}
+.price-value{font-size:20px;font-weight:600;color:var(--navy);font-family:'DM Mono',monospace;}
+.price-value.main{color:var(--blue);font-size:26px;}
+.info-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+.chip{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500;background:var(--blue-light);color:var(--blue);}
+.chip.green{background:var(--green-light);color:var(--green);}
+.chip.amber{background:var(--amber-light);color:var(--amber);}
+.info-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--slate);line-height:1.6;margin-top:12px;}
+.info-box strong{color:var(--navy);font-weight:600;}
+
+/* COMPARATOR */
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-top:16px;}
+.compare-card{border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;transition:box-shadow .15s;}
+.compare-card:hover{box-shadow:var(--shadow);}
+.compare-card.best{border-color:var(--blue);}
+.compare-card-header{padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--border);}
+.compare-card.best .compare-card-header{background:var(--blue-light);}
+.best-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue);margin-bottom:4px;display:block;}
+.compare-name{font-size:13px;font-weight:600;color:var(--navy);}
+.compare-scope{font-size:11px;color:var(--slate);margin-top:2px;}
+.compare-body{padding:12px 14px;}
+.compare-price{font-size:22px;font-weight:600;color:var(--navy);font-family:'DM Mono',monospace;}
+.compare-per{font-size:11px;color:var(--slate-light);margin-top:2px;}
+.compare-features{margin-top:10px;display:flex;flex-direction:column;gap:4px;}
+.compare-feat{font-size:11px;color:var(--slate);display:flex;align-items:center;gap:5px;}
+.compare-feat::before{content:'✓';color:var(--green);font-weight:700;}
+
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:white;color:var(--slate);cursor:pointer;transition:all .12s;}
+.filter-chip:hover{border-color:var(--blue-mid);color:var(--blue);}
+.filter-chip.active{border-color:var(--blue);background:var(--blue-light);color:var(--blue);}
+
+.toggle-row{display:flex;align-items:center;gap:12px;margin-top:16px;}
+.toggle-label{font-size:14px;color:var(--slate);}
+.toggle{display:flex;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;}
+.toggle-opt{padding:7px 16px;font-size:13px;font-weight:500;color:var(--slate);cursor:pointer;background:white;border:none;font-family:'DM Sans',sans-serif;transition:all .12s;}
+.toggle-opt+.toggle-opt{border-left:1px solid var(--border);}
+.toggle-opt.active{background:var(--blue);color:white;}
+
+.hero{text-align:center;padding:40px 24px 32px;}
+.hero-icon{width:64px;height:64px;background:var(--navy);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;box-shadow:var(--shadow);}
+.hero-title{font-size:26px;font-weight:600;color:var(--navy);letter-spacing:-.04em;}
+.hero-sub{font-size:15px;color:var(--slate);margin-top:8px;line-height:1.5;}
+.hero-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:28px;}
+.hero-card{background:white;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:18px 16px;cursor:pointer;transition:border-color .15s,transform .1s,box-shadow .15s;text-align:left;}
+.hero-card:hover{border-color:var(--blue-mid);transform:translateY(-2px);box-shadow:var(--shadow);}
+.hero-card-icon{font-size:24px;margin-bottom:10px;}
+.hero-card-title{font-size:14px;font-weight:600;color:var(--navy);}
+.hero-card-desc{font-size:12px;color:var(--slate);margin-top:4px;line-height:1.4;}
+
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}.mt16{margin-top:16px;}.mt20{margin-top:20px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+
+@media(max-width:600px){
+  .hero-cards{grid-template-columns:1fr;}
+  .options-grid.col2{grid-template-columns:1fr;}
+  .rec-grid{grid-template-columns:1fr;}
+  .compare-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* ── Rich recommendation card ── */
+.rec-result { margin:0; }
+.rec-profile-bar {
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:14px 18px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+.rec-profile-chip {
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:20px;
+  background:var(--white);border:1px solid var(--border);
+  color:var(--slate);
+}
+.rec-profile-chip .chip-icon { font-size:13px; }
+
+.rec-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0f172a 100%);
+  padding:28px 24px 24px;
+  position:relative;overflow:hidden;
+}
+.rec-hero::before {
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:220px;height:220px;
+  background:radial-gradient(circle, rgba(59,130,246,0.18) 0%, transparent 70%);
+  border-radius:50%;
+}
+.rec-hero::after {
+  content:'';position:absolute;bottom:-40px;left:30px;
+  width:140px;height:140px;
+  background:radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  border-radius:50%;
+}
+.rec-hero-eyebrow {
+  font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:#60a5fa;margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.rec-hero-eyebrow::before {
+  content:'';display:block;width:24px;height:2px;background:#60a5fa;border-radius:2px;
+}
+.rec-ticket-name {
+  font-size:28px;font-weight:700;color:white;letter-spacing:-.04em;
+  line-height:1.1;position:relative;z-index:1;
+}
+.rec-ticket-price {
+  font-size:42px;font-weight:700;color:#60a5fa;
+  font-family:'DM Mono',monospace;letter-spacing:-.03em;
+  margin-top:8px;position:relative;z-index:1;
+  display:flex;align-items:baseline;gap:6px;
+}
+.rec-ticket-price .price-suffix {
+  font-size:16px;font-weight:500;color:#93c5fd;
+}
+.rec-where-buy {
+  margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;position:relative;z-index:1;
+}
+.rec-buy-chip {
+  font-size:11px;font-weight:500;padding:3px 10px;border-radius:12px;
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+  color:#cbd5e1;
+}
+
+.rec-body { padding:20px 20px 16px; }
+.rec-reasoning {
+  font-size:14px;line-height:1.7;color:var(--navy);
+  padding:14px 16px;
+  background:var(--blue-light);
+  border-left:3px solid var(--blue);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom:16px;
+}
+.rec-reasoning strong { color:var(--blue); }
+
+.rec-alts-title {
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--slate-light);margin-bottom:10px;
+}
+.rec-alts { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px; }
+.rec-alt {
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;background:var(--white);
+}
+.rec-alt-name { font-size:13px;font-weight:600;color:var(--navy); }
+.rec-alt-price { font-size:18px;font-weight:600;color:var(--slate);font-family:'DM Mono',monospace;margin-top:2px; }
+.rec-alt-note { font-size:11px;color:var(--slate);margin-top:4px;line-height:1.4; }
+
+.rec-startstop-note {
+  background:linear-gradient(135deg,#fef3c7,#fde68a);
+  border:1px solid #f59e0b;border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:14px;
+  display:flex;gap:10px;align-items:flex-start;
+}
+.rec-startstop-note .ss-icon { font-size:18px;flex-shrink:0;margin-top:1px; }
+.rec-startstop-note .ss-text { font-size:12px;line-height:1.5;color:#78350f; }
+.rec-startstop-note .ss-text strong { color:#92400e;font-weight:700; }
+
+.rec-actions {
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:14px 20px;border-top:1px solid var(--border);
+}
+.rec-action-link {
+  flex:1;min-width:120px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px 14px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;text-decoration:none;
+  border:1.5px solid var(--border);color:var(--navy);background:var(--white);
+  transition:border-color .15s,background .15s;
+}
+.rec-action-link:hover { border-color:var(--blue-mid);background:var(--blue-light);color:var(--blue); }
+.rec-action-link.primary { background:var(--blue);color:white;border-color:var(--blue); }
+.rec-action-link.primary:hover { background:#1447c0;border-color:#1447c0; }
+
+/* ── Ulgi screen ─────────────────────────────────────────── */
+.ulgi-section-title {
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--slate-light);margin:20px 0 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.ulgi-section-title::after {
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.ulgi-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.ulgi-card {
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px;background:var(--white);
+  cursor:pointer;text-align:left;width:100%;
+  transition:border-color .15s,background .15s,transform .1s;
+  position:relative;
+}
+.ulgi-card:hover { border-color:var(--blue-mid);transform:translateY(-1px); }
+.ulgi-card.free { border-color:#16a34a; }
+.ulgi-card.free:hover { border-color:#15803d; }
+.ulgi-card.discount { border-color:var(--blue); }
+.ulgi-card .check-badge { position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center; }
+.ulgi-card .check-badge svg { width:10px;height:10px;stroke:white;stroke-width:2.5;fill:none; }
+.ulgi-card.selected .check-badge { display:flex; }
+.ulgi-card.free.selected .check-badge { background:#16a34a; }
+.ulgi-card.discount.selected .check-badge { background:var(--blue); }
+.ulgi-card.selected { background:var(--blue-light); }
+.ulgi-card.free.selected { background:#dcfce7; }
+.ulgi-badge {
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;
+}
+.ulgi-badge.free { background:#dcfce7;color:#15803d; }
+.ulgi-badge.discount { background:var(--blue-light);color:var(--blue); }
+.ulgi-badge.normal { background:var(--bg);color:var(--slate); }
+.ulgi-title { font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px; }
+.ulgi-who { font-size:11px;color:var(--slate);line-height:1.4;margin-bottom:6px; }
+.ulgi-doc { font-size:10px;color:var(--slate-light);line-height:1.4;border-top:1px solid var(--border);padding-top:6px;margin-top:6px; }
+.ulgi-doc strong { color:var(--slate);font-weight:600; }
+.ulgi-free-alert {
+  background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+  border:1.5px solid #16a34a;border-radius:var(--radius-sm);
+  padding:16px;margin-top:12px;display:none;
+}
+.ulgi-free-alert .alert-icon { font-size:24px;margin-bottom:8px; }
+.ulgi-free-alert .alert-title { font-size:16px;font-weight:600;color:#14532d;margin-bottom:4px; }
+.ulgi-free-alert .alert-text { font-size:13px;color:#166534;line-height:1.5; }
+.ulgi-free-alert .alert-doc { font-size:12px;color:#15803d;margin-top:8px;font-weight:500; }
+@media(max-width:600px){.ulgi-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+
+
+
+<div class="gtfs-bar">
+  <div class="gtfs-dot ok" id="gtfs-dot"></div>
+  <span id="gtfs-status">Baza 204 przystanków i węzłów GZM gotowa ✓</span>
+</div>
+
+<div class="container">
+
+  <!-- WIZARD VIEW -->
+  <div class="view active" id="view-wizard">
+
+    <div id="screen-welcome">
+      <div class="hero" style="padding-bottom:16px;">
+        <div class="hero-icon">🚌</div>
+        <div class="hero-title">Dobierz mi bilet</div>
+        <div class="hero-sub">Odpowiedz na kilka pytań —<br>dobierzemy bilet idealnie dopasowany do Ciebie.</div>
+      </div>
+
+      <div class="card" style="margin-top:0;" id="welcome-card">
+        <div class="card-body" style="padding-top:20px;">
+
+          <!-- PROGRESS BAR -->
+          <div id="wq-progress" style="margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;" id="wq-step-labels"></div>
+            <div style="height:3px;background:var(--border);border-radius:3px;overflow:hidden;">
+              <div id="wq-bar" style="height:100%;background:var(--blue);border-radius:3px;transition:width .4s;width:0%"></div>
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-bottom:16px;">
+            <button class="btn btn-secondary" style="font-size:15px;padding:11px 22px;" onclick="switchView('comparator')">📊 Porównaj wszystkie bilety GZM</button>
+          </div>
+
+          <!-- Q1: ULGA -->
+          <div class="wq-step" id="wq-1">
+            <div class="step-label">Krok 1 z 5</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Z jakiego biletu korzystasz?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;">Wpływa na ceny wszystkich biletów</div>
+            <div class="options-grid col2" style="margin-top:0;">
+              <button class="option-card" data-wqa-step="1" data-wqa-val="normalny">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🧑</span>
+                <div class="oc-title">Bilet normalny</div>
+                <div class="oc-desc">Pełna cena — brak uprawnień do ulgi</div>
+              </button>
+              <button class="option-card" data-wqa-step="1" data-wqa-val="ulgowy">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🎓</span>
+                <div class="oc-title">Bilet ulgowy</div>
+                <div class="oc-desc">Uczniowie, studenci, emeryci 60+, renciści i inni uprawnieni</div>
+              </button>
+              <button class="option-card" style="grid-column:1/-1;" onclick="showUlgi()">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🎫</span>
+                <div class="oc-title">Sprawdź czy przysługuje Ci ulga lub bezpłatny przejazd</div>
+                <div class="oc-desc">Dzieci, emeryci 70+, osoby z niepełnosprawnością i inni uprawnieni</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Q2: CZĘSTOTLIWOŚĆ -->
+          <div class="wq-step" id="wq-2" style="display:none;">
+            <div class="step-label">Krok 2 z 5</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Jak często korzystasz z komunikacji GZM?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;">Decyduje między biletem czasowym, Pakietem a biletem sieciowym</div>
+            <div class="options-grid col2" style="margin-top:0;">
+              <button class="option-card" data-wqa-step="2" data-wqa-val="okazjonalnie">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🎯</span>
+                <div class="oc-title">Okazjonalnie</div>
+                <div class="oc-desc">Kilka razy w miesiącu lub rzadziej</div>
+                <div class="oc-price">→ „20 min", „40 min", „120 min"</div>
+              </button>
+              <button class="option-card" data-wqa-step="2" data-wqa-val="kilka_w_tygodniu">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">📅</span>
+                <div class="oc-title">Kilka razy w tygodniu</div>
+                <div class="oc-desc">2–4 razy tygodniowo</div>
+                <div class="oc-price">→ Pakiet 20, Pakiet 40 lub „Sieć 7"</div>
+              </button>
+              <button class="option-card" data-wqa-step="2" data-wqa-val="codziennie">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🔄</span>
+                <div class="oc-title">Codziennie</div>
+                <div class="oc-desc">Do pracy, szkoły lub uczelni</div>
+                <div class="oc-price">→ „Metrobilet Miasto 30" lub „Sieć 30"</div>
+              </button>
+              <button class="option-card" data-wqa-step="2" data-wqa-val="wielokrotnie">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">⚡</span>
+                <div class="oc-title">Wiele razy dziennie</div>
+                <div class="oc-desc">Kilka kursów każdego dnia</div>
+                <div class="oc-price">→ „Metrobilet Sieć 30", „Sieć 90" lub „Sieć 180"</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Q3: KOLEJ -->
+          <div class="wq-step" id="wq-3" style="display:none;">
+            <div class="step-label">Krok 3 z 5</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Czy korzystasz z Kolei Śląskich lub POLREGIO na terenie GZM?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;">Metrobilety obejmują kolej — to może wpłynąć na wybór biletu</div>
+            <div class="options-grid col2" style="margin-top:0;">
+              <button class="option-card" data-wqa-step="3" data-wqa-val="tak">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🚆</span>
+                <div class="oc-title">Tak, korzystam</div>
+                <div class="oc-desc">Dojeżdżam Kolejami Śląskimi lub POLREGIO w obszarze GZM</div>
+                <div class="oc-price">→ wymagany bilet Metrobilet</div>
+              </button>
+              <button class="option-card" data-wqa-step="3" data-wqa-val="nie">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <div style="display:flex;gap:4px;margin-bottom:6px;"><span style="font-size:20px;">🚌</span><span style="font-size:20px;">🚃</span><span style="font-size:20px;">🚎</span></div>
+                <div class="oc-title">Nie — autobus, tramwaj lub trolejbus</div>
+                <div class="oc-desc">Korzystam wyłącznie z komunikacji miejskiej GZM (autobusy, tramwaje, trolejbusy w Tychach i Gdyni)</div>
+                <div class="oc-price">→ bilety sieciowe bez kolei</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Q4: DŁUGOŚĆ TRAS -->
+          <div class="wq-step" id="wq-4" style="display:none;">
+            <div class="step-label">Krok 4 z 5</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Jak długie są Twoje typowe przejazdy?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;">Wpływa na wybór między biletem czasowym a Start/Stop</div>
+            <div class="options-grid col2" style="margin-top:0;">
+              <button class="option-card" data-wqa-step="4" data-wqa-val="krotka">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🚏</span>
+                <div class="oc-title">Krótkie trasy</div>
+                <div class="oc-desc">Kilka przystanków, do ok. 20 minut</div>
+                <div class="oc-price">→ „20 minut" lub Start/Stop</div>
+              </button>
+              <button class="option-card" data-wqa-step="4" data-wqa-val="dluga">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🛣️</span>
+                <div class="oc-title">Długie trasy</div>
+                <div class="oc-desc">Wiele przystanków, powyżej 20 minut</div>
+                <div class="oc-price">→ „40 min", „120 min" lub Start/Stop</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Q5: OBSZAR + PLANER -->
+          <div class="wq-step" id="wq-5" style="display:none;">
+            <div class="step-label">Krok 5 z 5</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Na jakim obszarze podróżujesz?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;">Decyduje o zakresie biletu lub użyj planera trasy dla dokładniejszej analizy</div>
+            <div class="options-grid col2" style="margin-top:0;">
+              <button class="option-card" data-wqa-step="5" data-wqa-val="1miasto">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🏙️</span>
+                <div class="oc-title">Jedno miasto</div>
+                <div class="oc-desc">Wszystkie przejazdy w obrębie jednej gminy GZM</div>
+                <div class="oc-price">→ „Metrobilet Miasto 30" lub „Miasto 90"</div>
+              </button>
+              <button class="option-card" data-wqa-step="5" data-wqa-val="2miasta">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🏘️</span>
+                <div class="oc-title">Dwa miasta</div>
+                <div class="oc-desc">Podróżuję między dwoma graniczącymi gminami</div>
+                <div class="oc-price">→ „Metrobilet 2 Miasta 30" lub „2 Miasta 90"</div>
+              </button>
+              <button class="option-card" data-wqa-step="5" data-wqa-val="3-6miast">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🗺️</span>
+                <div class="oc-title">3–6 miast</div>
+                <div class="oc-desc">Trasa przez kilka gmin, np. z koleją regionalną</div>
+                <div class="oc-price">→ „Metrobilet Obszarowy 30"</div>
+              </button>
+              <button class="option-card" data-wqa-step="5" data-wqa-val="metropolia">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🌐</span>
+                <div class="oc-title">Cała Metropolia</div>
+                <div class="oc-desc">Jeżdżę po całej sieci GZM bez ograniczeń</div>
+                <div class="oc-price">→ „Sieć 7/30/90/180" lub „Metrobilet Sieć 30"</div>
+              </button>
+            </div>
+            <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+              <div style="font-size:12px;color:var(--slate);margin-bottom:8px;font-weight:500;">Lub skorzystaj z planera trasy dla dokładniejszej analizy:</div>
+              <button class="option-card" id="wq-planer-btn" data-wqa-action="usePlaner" style="border-style:dashed;">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+                <span class="oc-icon">🗺️</span>
+                <div class="oc-title">Użyj planera trasy</div>
+                <div class="oc-desc">Wpisz skąd i dokąd — AI uwzględni trasę w rekomendacji</div>
+                <div class="oc-price">→ precyzyjna analiza konkretnej trasy</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- PLANER TRASY (embedded) -->
+          <div class="wq-step" id="wq-planer" style="display:none;">
+            <div class="step-label">Planer trasy</div>
+            <div style="font-size:17px;font-weight:600;color:var(--navy);margin:4px 0 4px;">Skąd i dokąd jedziesz?</div>
+            <div style="font-size:13px;color:var(--slate);margin-bottom:14px;" id="wq-planer-sub">Wpisz przystanki — dane z bazy ZTM GZM</div>
+            <div class="route-wrap">
+              <div class="route-row" style="position:relative;">
+                <div class="route-dot from"></div>
+                <input class="route-input" id="wq-inp-from" placeholder="Przystanek początkowy…" autocomplete="off" data-wqa-ac="from" data-wqa-ackey="from">
+                <button class="route-swap" data-wqa-action="swapRoute" title="Zamień">⇅</button>
+                <div class="ac-dropdown" id="wq-ac-from"></div>
+              </div>
+              <div class="route-row" style="position:relative;">
+                <div class="route-dot to"></div>
+                <input class="route-input" id="wq-inp-to" placeholder="Przystanek docelowy…" autocomplete="off" data-wqa-ac="to" data-wqa-ackey="to">
+                <div class="ac-dropdown" id="wq-ac-to"></div>
+              </div>
+              <div class="route-row" style="position:relative;gap:8px;">
+                <span style="font-size:18px;flex-shrink:0;">🕐</span>
+                <label for="wq-inp-time" style="font-size:13px;color:var(--slate);white-space:nowrap;flex-shrink:0;">Godzina odjazdu:</label>
+                <input type="time" id="wq-inp-time" style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:14px;color:var(--navy);background:var(--white);cursor:pointer;">
+              </div>
+            </div>
+            <div class="nav" style="margin-top:14px;">
+              <button class="btn btn-secondary" data-wqa-action="backToQ5">← Wstecz</button>
+              <button class="btn btn-primary" data-wqa-action="getRecommendation">🎫 Podpowiedz bilet →</button>
+            </div>
+          </div>
+
+          <!-- WYNIK -->
+          <div class="wq-step" id="wq-result" style="display:none;">
+            <div id="wq-result-area"></div>
+            <div class="nav" style="margin-top:16px;">
+              <button class="btn btn-secondary" data-wqa-action="restart">↩ Zacznij od nowa</button>
+              <button class="btn btn-primary" onclick="switchView('comparator')">Porównaj wszystkie bilety →</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- ULGI SCREEN -->
+    <div id="screen-ulgi" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="step-label">Przegląd uprawnień</div>
+          <div class="card-title">Ulgi i przejazdy bezpłatne</div>
+          <div class="card-subtitle">Sprawdź czy przysługuje Ci zniżka lub bezpłatny przejazd — zgodnie z Taryfą GZM</div>
+        </div>
+        <div class="card-body">
+
+          <!-- BEZPŁATNE -->
+          <div class="ulgi-section-title">Przejazdy bezpłatne</div>
+          <div class="ulgi-grid" id="ulgi-free-grid">
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Dziecko do 7 lat">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Dziecko do 7. urodzin</div>
+              <div class="ulgi-who">Dzieci, które nie ukończyły 7 roku życia</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Oświadczenie opiekuna towarzyszącego w podróży</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Dziecko/młodzież 7–16 lat z GZM">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Dzieci i młodzież 7–16 lat zamieszkałe na terenie GZM</div>
+              <div class="ulgi-who">Dzieci i młodzież od 7. do 16. urodzin, zamieszkałe/zameldowane w gminie należącej do GZM</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Uprawnienie zakodowane w systemie Transport GZM na podstawie legitymacji szkolnej / mLegitymacji / zaświadczenia potwierdzającego miejsce zamieszkania. Do czasu weryfikacji w POP — niezbędny dokument przy sobie.</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Dziecko/młodzież z niepełnosprawnością do 18 lat">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Dziecko/młodzież z niepełnosprawnością (do 18 lat)</div>
+              <div class="ulgi-who">Dzieci i młodzież z niepełnosprawnością do dnia 18. urodzin</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja osoby niepełnosprawnej lub orzeczenie o niepełnosprawności / stopniu niepełnosprawności wydane przez właściwy organ</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Osoby z niepełnosprawnością uczące się">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Osoby z niepełnosprawnością uczące się (przedszkole, szkoła, ośrodek)</div>
+              <div class="ulgi-who">Osoby z niepełnosprawnością uczęszczające do przedszkola, szkoły lub placówki oświatowej</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja przedszkolna / szkolna dla uczniów niepełnosprawnych lub mLegitymacja szkolna dla uczniów niepełnosprawnych</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Osoby ze znacznym stopniem niepełnosprawności">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Całkowita niezdolność do pracy i samodzielnej egzystencji / znaczny stopień niepełnosprawności</div>
+              <div class="ulgi-who">Osoby całkowicie niezdolne do pracy i samodzielnej egzystencji lub uznane za niepełnosprawne w stopniu znacznym (I grupa inwalidów)</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja dokumentująca znaczny stopień niepełnosprawności lub orzeczenie komisji / ZUS / KRUS stwierdzające niezdolność do samodzielnej egzystencji</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Osoba niewidoma lub ociemniała">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Osoba niewidoma lub ociemniała</div>
+              <div class="ulgi-who">Osoby niewidome i ociemniałe</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja PZN lub Związku Ociemniałych Żołnierzy RP, lub orzeczenie ze znacznym/umiarkowanym stopniem niepełnosprawności z symbolem „04-O"</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Opiekun osoby z niepełnosprawnością">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Opiekun towarzyszący osobie z niepełnosprawnością</div>
+              <div class="ulgi-who">Jedna osoba towarzysząca w podróży osobom wymienionym powyżej (dzieci z niepełnosprawnością do 18 lat, uczące się z niepełnosprawnością, niewidome/ociemniałe, ze znacznym stopniem niepełnosprawności)</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Dokument poświadczający uprawnienia osoby z niepełnosprawnością, której towarzyszy opiekun</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Inwalida wojenny lub wojskowy">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Inwalida wojenny, wojskowy lub osoba represjonowana</div>
+              <div class="ulgi-who">Inwalidzi wojenni, wojskowi oraz osoby represjonowane</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Książka inwalidy wojennego lub wojskowego / legitymacja osoby represjonowanej wydana przez ZUS</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Poseł lub Senator">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Poseł na Sejm lub Senator</div>
+              <div class="ulgi-who">Posłowie na Sejm i Senatorowie RP</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja poselska lub senatorska</div>
+            </button>
+
+            <button class="ulgi-card free" data-ulga="bezplatny" data-label="Osoba po 70. roku życia">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge free">✓ Bezpłatny</div>
+              <div class="ulgi-title">Osoba, która ukończyła 70 lat</div>
+              <div class="ulgi-who">Osoby, które ukończyły 70. rok życia</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Dokument tożsamości zawierający datę urodzenia i zdjęcie</div>
+            </button>
+
+          </div>
+
+          <!-- ULGOWE -->
+          <div class="ulgi-section-title">Ulga 50%</div>
+          <div class="ulgi-grid">
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Dziecko 7–13 lat (spoza GZM lub niezarejestrowane)">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Dziecko 7–13 lat</div>
+              <div class="ulgi-who">Dzieci w wieku od 7 do 13. urodzin — jeśli nie są objęte przejazdami bezpłatnymi (np. mieszkają poza GZM lub nie zarejestrowały uprawnienia)</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Oświadczenie opiekuna / ważna legitymacja szkolna / mLegitymacja</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Uczeń szkoły podstawowej (13+) lub ponadpodstawowej (do 21 lat)">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Uczeń — szkoła podstawowa (13+) lub ponadpodstawowa (do 21 lat)</div>
+              <div class="ulgi-who">Uczniowie szkół podstawowych po 13. urodzinach oraz uczniowie szkół ponadpodstawowych (w tym policealnych) — nie dłużej niż do 21. urodzin. Warunek: nie są objęci przejazdami bezpłatnymi.</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja szkolna lub mLegitymacja szkolna</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Student">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Student szkół wyższych i kolegiów</div>
+              <div class="ulgi-who">Studenci szkół wyższych, wyższych szkół zawodowych, słuchacze kolegiów nauczycielskich / językowych / pracowników służb społecznych</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja studencka / ELS / mLegitymacja studencka / ISIC / legitymacja słuchacza kolegium</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Emeryt po 60. roku życia">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Emeryt po 60. roku życia</div>
+              <div class="ulgi-who">Emeryci, którzy ukończyli 60. rok życia</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja emeryta-rencisty wydana przez uprawniony organ lub mLegitymacja emeryta-rencisty</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Rencista">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Rencista (renta z tytułu niezdolności do pracy lub socjalna)</div>
+              <div class="ulgi-who">Osoby pobierające rentę z tytułu niezdolności do pracy lub rentę socjalną</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja emeryta-rencisty lub mLegitymacja</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Renta rodzinna (wybrane przypadki)">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Renta rodzinna (wybrane przypadki)</div>
+              <div class="ulgi-who">Osoby pobierające rentę rodzinną, spełniające co najmniej jeden z warunków: a) orzeczenie o niezdolności do pracy (całkowitej lub częściowej), b) wdowa/wdowiec po 50. roku życia</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja emeryta-rencisty + odpowiednie orzeczenie lekarza ZUS (dla wariantu a) lub sama legitymacja (dla wariantu b)</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Kombatant / działacz opozycji / weteran poszkodowany">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Kombatant, działacz opozycji lub weteran poszkodowany</div>
+              <div class="ulgi-who">Działacze opozycji antykomunistycznej, osoby represjonowane politycznie, kombatanci wojenni, weterani poszkodowani w działaniach poza granicami państwa</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Legitymacja działacza opozycji / zaświadczenie kombatanckie / ważna legitymacja weterana poszkodowanego</div>
+            </button>
+
+            <button class="ulgi-card discount" data-ulga="ulgowy" data-label="Sędzia lub prokurator w stanie spoczynku (60+)">
+              <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge discount">50% ulga</div>
+              <div class="ulgi-title">Sędzia/prokurator w stanie spoczynku (po 60. roku życia)</div>
+              <div class="ulgi-who">Sędziowie i prokuratorzy w stanie spoczynku po 60. roku życia oraz współmałżonkowie (po 50. roku życia) pobierający uposażenie rodzinne</div>
+              <div class="ulgi-doc"><strong>Dokument:</strong> Ważna legitymacja sędziego/prokuratora z odpowiednim wpisem lub pismo o przyznaniu uposażenia rodzinnego</div>
+            </button>
+
+          </div>
+
+          <!-- BRAK UPRAWNIEŃ -->
+          <div class="ulgi-section-title">Brak uprawnień</div>
+          <div class="ulgi-grid" style="grid-template-columns:1fr;">
+            <button class="ulgi-card" data-ulga="normalny" data-label="Bilet normalny">
+              <div class="check-badge" style="background:var(--slate);"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>
+              <div class="ulgi-badge normal">Pełna cena</div>
+              <div class="ulgi-title">Brak uprawnień do ulgi — bilet normalny</div>
+              <div class="ulgi-who">Wszystkie inne osoby nieposiadające uprawnień do przejazdów bezpłatnych lub ulgowych</div>
+            </button>
+          </div>
+
+          <!-- Alert bezpłatny -->
+          <div class="ulgi-free-alert" id="ulgi-free-alert">
+            <div class="alert-icon">✅</div>
+            <div class="alert-title" id="ulgi-alert-title">Nie musisz kupować biletu!</div>
+            <div class="alert-text" id="ulgi-alert-text">Przysługuje Ci przejazd bezpłatny na podstawie Taryfy Transport GZM.</div>
+            <div class="alert-doc" id="ulgi-alert-doc"></div>
+          </div>
+
+          <div class="nav" style="margin-top:16px;">
+            <button class="btn btn-secondary" onclick="showScreen('welcome')">⌂ Strona główna</button>
+            <button class="btn btn-primary" id="ulgi-continue-btn" style="display:none;" onclick="ulgiContinue()">Dalej — sprawdź bilety →</button>
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:var(--slate-light);line-height:1.5;">
+            Uprawnienia zgodne z §9 Taryfy przewozu osób i bagażu w komunikacji miejskiej Transport GZM (obowiązuje od 01.01.2026).<br>
+            Pasażer może korzystać podczas przejazdu tylko z jednej ulgi.
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ROUTE PLANNER -->
+    <div id="screen-route" style="display:none;">
+      <div class="card">
+        <div class="card-header">
+          <div class="step-label">Planer trasy · Dane GTFS ZTM</div>
+          <div class="card-title">Skąd i dokąd jedziesz?</div>
+          <div class="card-subtitle" id="route-subtitle">Zacznij pisać nazwę przystanku — podpowiemy z bazy ZTM</div>
+        </div>
+        <div class="card-body">
+          <div class="route-wrap">
+            <div class="route-row" style="position:relative;">
+              <div class="route-dot from"></div>
+              <input class="route-input" id="inp-from" placeholder="Przystanek początkowy…" autocomplete="off" oninput="onAcInput('from')" onkeydown="onAcKey(event,'from')">
+              <button class="route-swap" onclick="swapRoute()" title="Zamień">⇅</button>
+              <div class="ac-dropdown" id="ac-from"></div>
+            </div>
+            <div class="route-row" style="position:relative;">
+              <div class="route-dot to"></div>
+              <input class="route-input" id="inp-to" placeholder="Przystanek docelowy…" autocomplete="off" oninput="onAcInput('to')" onkeydown="onAcKey(event,'to')">
+              <div class="ac-dropdown" id="ac-to"></div>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span class="toggle-label">Ulga:</span>
+            <div class="toggle">
+              <button class="toggle-opt active" id="rd-norm" onclick="setRD('normalny')">Normalny</button>
+              <button class="toggle-opt" id="rd-ulg" onclick="setRD('ulgowy')">Ulgowy 50%</button>
+            </div>
+          </div>
+
+          <div id="route-ai-area"></div>
+
+          <div class="nav">
+            <button class="btn btn-secondary" onclick="showScreen('welcome')">← Wstecz</button>
+            <button class="btn btn-primary" id="btn-analyze" onclick="analyzeRoute()">🔍 Analizuj trasę</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIZARD STEPS -->
+    <div id="screen-wizard" style="display:none;">
+      <div class="card">
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:25%"></div></div>
+          <div class="progress-steps">
+            <span class="progress-step-label active" id="ps-1">Rodzaj biletu</span>
+            <span class="progress-step-label" id="ps-2">Ulga</span>
+            <span class="progress-step-label" id="ps-3">Wariant</span>
+            <span class="progress-step-label" id="ps-4">Wynik</span>
+          </div>
+        </div>
+
+        <div id="wz-step-1">
+          <div class="card-header mt12">
+            <div class="step-label">Krok 1 z 3</div>
+            <div class="card-title">Jaki typ biletu?</div>
+            <div class="card-subtitle">Wybierz kategorię, aby przejść dalej</div>
+          </div>
+          <div class="card-body">
+            <div class="options-grid col2">
+              <button class="option-card" onclick="selectType('jednorazowy',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">⏱️</span>
+                <div class="oc-title">„20 minut" / „40 minut" / „120 minut"</div>
+                <div class="oc-desc">Bilety czasowe z możliwością przesiadek, też Grupowy</div>
+                <div class="oc-price">od 4,20 zł</div>
+              </button>
+              <button class="option-card" onclick="selectType('start-stop',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">📍</span>
+                <div class="oc-title">Podróż Start/Stop</div>
+                <div class="oc-desc">Opłata wg czasu z rozkładu jazdy — nie rzeczywistego przejazdu</div>
+                <div class="oc-price">od 2,10 zł</div>
+              </button>
+              <button class="option-card" onclick="selectType('pakietowy',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">📦</span>
+                <div class="oc-title">Pakietowy</div>
+                <div class="oc-desc">20, 40 lub 80 przejazdów na 180 dni</div>
+                <div class="oc-price">od 60 zł</div>
+              </button>
+              <button class="option-card" onclick="selectType('sredniookresowy',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">☀️</span>
+                <div class="oc-title">„Dzienny" / „Metrobilet 24h"</div>
+                <div class="oc-desc">„Dzienny" do 23:59, „Metrobilet 24h" — pełne 24h + kolej</div>
+                <div class="oc-price">od 13 zł</div>
+              </button>
+              <button class="option-card" onclick="selectType('dlugookresowy',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">📅</span>
+                <div class="oc-title">„Sieć 7" / „Sieć 30" / „Sieć 90" / „Sieć 180"</div>
+                <div class="oc-desc">Metrobilety (z Kolejami Śląskimi/POLREGIO) i bilety sieciowe — 7 do 180 dni</div>
+                <div class="oc-price">od 60 zł / 7 dni</div>
+              </button>
+            </div>
+            <div class="nav"><button class="btn btn-secondary" onclick="showScreen('welcome')">⌂ Strona główna</button></div>
+          </div>
+        </div>
+
+        <div id="wz-step-2" style="display:none;">
+          <div class="card-header mt12">
+            <div class="step-label">Krok 2 z 3</div>
+            <div class="card-title">Masz uprawnienie do ulgi?</div>
+            <div class="card-subtitle">Wybierz — przejdziemy automatycznie</div>
+          </div>
+          <div class="card-body">
+            <div class="options-grid col2">
+              <button class="option-card" onclick="selectDiscount('normalny',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">🧑</span>
+                <div class="oc-title">Normalny</div>
+                <div class="oc-desc">Pełna cena biletu</div>
+              </button>
+              <button class="option-card" onclick="selectDiscount('ulgowy',this)">
+                <div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+                <span class="oc-icon">🎓</span>
+                <div class="oc-title">Ulgowy 50%</div>
+                <div class="oc-desc">Uczniowie, studenci, emeryci 60+, renciści…</div>
+              </button>
+            </div>
+            <div class="nav"><button class="btn btn-secondary" onclick="wzStep(1)">← Wstecz</button><button class="btn btn-ghost" onclick="showScreen('welcome')" style="font-size:13px;">⌂ Strona główna</button></div>
+          </div>
+        </div>
+
+        <div id="wz-step-3" style="display:none;">
+          <div class="card-header mt12">
+            <div class="step-label">Krok 3 z 3</div>
+            <div class="card-title" id="wz3-title">Wybierz wariant</div>
+            <div class="card-subtitle">Kliknij żeby zobaczyć cenę</div>
+          </div>
+          <div class="card-body">
+            <div class="options-grid" id="wz3-opts"></div>
+            <div class="nav"><button class="btn btn-secondary" onclick="wzStep(2)">← Wstecz</button><button class="btn btn-ghost" onclick="showScreen('welcome')" style="font-size:13px;">⌂ Strona główna</button></div>
+          </div>
+        </div>
+
+        <div id="wz-step-4" style="display:none;">
+          <div class="result-hero">
+            <div class="result-hero-label">Twój bilet</div>
+            <div class="result-hero-name" id="res-name">-</div>
+            <div class="result-hero-scope" id="res-scope">-</div>
+          </div>
+          <div class="result-body">
+            <div id="res-prices"></div>
+            <div class="info-chips" id="res-chips"></div>
+            <div class="info-box mt12" id="res-info"></div>
+            <div class="nav mt20">
+              <button class="btn btn-secondary" onclick="wzStep(3)">← Wstecz</button>
+              <button class="btn btn-primary" onclick="switchView('comparator')">Porównaj z innymi →</button>
+            </div>
+            <button class="btn btn-ghost mt12" onclick="showScreen('welcome')">⌂ Strona główna</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /view-wizard -->
+
+  <!-- COMPARATOR VIEW -->
+  <div class="view" id="view-comparator">
+    <div class="card">
+      <div class="card-header">
+        <div class="flex-between">
+          <div>
+            <div class="step-label" id="tariff-label">Taryfa Transport GZM — od 01.01.2026</div>
+            <div class="card-title">Porównywarka biletów</div>
+          </div>
+          <button class="btn btn-secondary" style="font-size:13px;padding:6px 14px;" onclick="switchView('wizard')">← Wróć do kreatora</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="toggle-row">
+          <span class="toggle-label">Bilet:</span>
+          <div class="toggle">
+            <button class="toggle-opt active" id="cd-norm" onclick="setCDisc('normalny')">Normalny</button>
+            <button class="toggle-opt" id="cd-ulg" onclick="setCDisc('ulgowy')">Ulgowy 50%</button>
+          </div>
+        </div>
+        <div class="filter-row" id="comp-filters">
+          <button class="filter-chip active" onclick="setCFilt('all',this)">Wszystkie</button>
+          <button class="filter-chip" onclick="setCFilt('jednorazowy',this)">20 / 40 / 120 minut</button>
+          <button class="filter-chip" onclick="setCFilt('start-stop',this)">Start/Stop</button>
+          <button class="filter-chip" onclick="setCFilt('pakietowy',this)">Pakiet 20 / 40 / 80</button>
+          <button class="filter-chip" onclick="setCFilt('sredniookresowy',this)">Dzienny / Metrobilet 24h</button>
+          <button class="filter-chip" onclick="setCFilt('dlugookresowy',this)">Sieć 7–180 / Metrobilety</button>
+        </div>
+        <div class="compare-grid" id="comp-grid"></div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);"><button class="btn btn-ghost" onclick="switchView('wizard');showScreen('welcome')" style="font-size:13px;">⌂ Strona główna</button></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- JSZip for parsing GTFS -->
+<script>
+// ═══════════════════════════════════════════════════════════
+// GTFS DATA
+// ═══════════════════════════════════════════════════════════
+var gtfsStops = []; // [{id, name, city, lat, lon}]
+var gtfsLoaded = false;
+var gtfsError = false;
+
+// Try multiple ZIP files from CKAN; pick the first that works
+// Using a CORS proxy isn't needed — the CKAN endpoint supports CORS
+// Przystanki GZM — ładowane z serwera (dane GTFS ZTM, CC BY 4.0)
+// fetch z /api/stops (builds from data/stops.json built from GTFS ZIP)
+
+function setGtfsStatus(state, msg) {
+  var dot = document.getElementById('gtfs-dot');
+  var status = document.getElementById('gtfs-status');
+  dot.className = 'gtfs-dot ' + state;
+  status.textContent = msg;
+}
+
+function loadGtfs() {
+  setGtfsStatus('loading', 'Ładuję bazę przystanków GZM…');
+  fetch('/api/stops')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      gtfsStops = data.map(function(s){ return {id:s.id, name:s.name, lat:s.lat, lon:s.lon}; });
+      gtfsLoaded = true;
+      gtfsError = false;
+      setGtfsStatus('ok', 'Baza ' + gtfsStops.length + ' przystanków GZM gotowa ✓');
+      var sub = document.getElementById('route-subtitle');
+      if (sub) sub.textContent = 'Zacznij pisać nazwę przystanku — ' + gtfsStops.length + ' lokalizacji GZM';
+    })
+    .catch(function(){
+      gtfsError = true;
+      setGtfsStatus('error', 'Błąd ładowania bazy przystanków');
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTOCOMPLETE
+// ═══════════════════════════════════════════════════════════
+var acState = {from:{val:null,idx:-1}, to:{val:null,idx:-1}};
+
+function searchStops(q, max) {
+  if (!q || q.length < 2) return [];
+  var ql = q.toLowerCase();
+  var results = [];
+  for (var i=0; i<gtfsStops.length && results.length<max; i++) {
+    var s = gtfsStops[i];
+    if (s.name.toLowerCase().indexOf(ql) >= 0) results.push(s);
+  }
+  // also rank those starting with query higher
+  results.sort(function(a,b){
+    var aS = a.name.toLowerCase().startsWith(ql) ? 0 : 1;
+    var bS = b.name.toLowerCase().startsWith(ql) ? 0 : 1;
+    return aS - bS;
+  });
+  return results.slice(0,8);
+}
+
+function onAcInput(side) {
+  var inp = document.getElementById("inp-" + side);
+  var dd = document.getElementById("ac-" + side);
+  var q = inp.value;
+  if (!q || q.length < 2 || !gtfsLoaded) { dd.style.display="none"; return; }
+  var results = searchStops(q, 8);
+  if (!results.length) {
+    dd.innerHTML = "<div class=\"ac-empty\">Brak wynikow</div>";
+    dd.style.display = "block"; return;
+  }
+  dd.innerHTML = results.map(function(s) {
+    var safe = s.name.replace(/&/g,'&amp;').replace(/["]/g,'&quot;');
+    return "<div class=\"ac-item ac-item-route\" data-stop=\"" + safe + "\" data-side=\"" + side + "\"><span class=\"ac-icon\">&#x1F68F;</span><div class=\"ac-stop-name\">" + s.name + "</div></div>";
+  }).join("");
+  dd.style.display = "block";
+}
+
+function onAcKey(e, side) {
+  var dd = document.getElementById('ac-' + side);
+  if (dd.style.display === 'none') return;
+  var items = dd.querySelectorAll('.ac-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acState[side].idx = Math.min(acState[side].idx+1, items.length-1);
+    items.forEach(function(el,i){ el.classList.toggle('active', i===acState[side].idx); });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acState[side].idx = Math.max(acState[side].idx-1, 0);
+    items.forEach(function(el,i){ el.classList.toggle('active', i===acState[side].idx); });
+  } else if (e.key === 'Enter') {
+    if (acState[side].idx >= 0) {
+      items[acState[side].idx].click();
+    }
+  } else if (e.key === 'Escape') {
+    dd.style.display = 'none';
+  }
+}
+
+function selectStop(side, name) {
+  document.getElementById('inp-' + side).value = name;
+  document.getElementById('ac-' + side).style.display = 'none';
+  acState[side].val = name;
+}
+
+document.addEventListener('click', function(e) {
+  // ac-item-route click — only regular route planner items
+  var routeItem = e.target.closest('.ac-item-route');
+  if (routeItem) {
+    var side = routeItem.dataset.side, name = routeItem.dataset.stop;
+    if (side && name) selectStop(side, name);
+    return;
+  }
+  ['from','to'].forEach(function(s){
+    var dd = document.getElementById('ac-'+s);
+    if (dd && !dd.contains(e.target) && e.target.id !== 'inp-'+s) {
+      dd.style.display = 'none';
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// ROUTE ANALYSIS
+// ═══════════════════════════════════════════════════════════
+var routeDiscount = 'normalny';
+
+function setRD(d) {
+  routeDiscount = d;
+  document.getElementById('rd-norm').classList.toggle('active', d==='normalny');
+  document.getElementById('rd-ulg').classList.toggle('active', d==='ulgowy');
+}
+
+function swapRoute() {
+  var a = document.getElementById('inp-from');
+  var b = document.getElementById('inp-to');
+  var tmp = a.value; a.value = b.value; b.value = tmp;
+  tmp = acState.from.val; acState.from.val = acState.to.val; acState.to.val = tmp;
+}
+
+function getStopInfo(name) {
+  if (!name) return null;
+  var nl = name.toLowerCase();
+  for (var i=0; i<gtfsStops.length; i++) {
+    if (gtfsStops[i].name.toLowerCase() === nl) return gtfsStops[i];
+  }
+  for (var i=0; i<gtfsStops.length; i++) {
+    if (gtfsStops[i].name.toLowerCase().indexOf(nl) >= 0) return gtfsStops[i];
+  }
+  return null;
+}
+
+// Returns all numeric stop_ids matching a stop name (multiple platforms/directions)
+function getAllStopIds(name) {
+  if (!name) return [];
+  var nl = name.toLowerCase();
+  var ids = [];
+  for (var i=0; i<gtfsStops.length; i++) {
+    if (gtfsStops[i].name.toLowerCase() === nl && gtfsStops[i].id) ids.push(gtfsStops[i].id);
+  }
+  if (!ids.length) {
+    for (var i=0; i<gtfsStops.length; i++) {
+      if (gtfsStops[i].name.toLowerCase().indexOf(nl) >= 0 && gtfsStops[i].id) ids.push(gtfsStops[i].id);
+    }
+  }
+  return ids;
+}
+
+function haversine(lat1,lon1,lat2,lon2) {
+  var R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function estimateTravelTime(from, to) {
+  var dist = haversine(from.lat, from.lon, to.lat, to.lon);
+  // We do NOT estimate travel time — real times come from GTFS stop_times
+  // which is too large to load in-browser. We pass distance to AI only.
+  return {dist: dist, minutes: null};
+}
+
+function recommendTickets(minutes, discount) {
+  var isUlg = discount === 'ulgowy';
+  var tickets = [];
+  var ssPrice;
+  if (minutes <= 20) {
+    tickets.push({name:'20 min (elektroniczny)', price: tPrice('20e',isUlg,isUlg?2.10:4.20), note:'Idealny do '+minutes+' min', best:true});
+    ssPrice = isUlg
+      ? tPrice(minutes<=5?'ss5':minutes<=10?'ss10':minutes<=15?'ss15':'ss20', true, minutes<=5?1.05:minutes<=10?1.60:minutes<=15?1.85:2.10)
+      : tPrice(minutes<=5?'ss5':minutes<=10?'ss10':minutes<=15?'ss15':'ss20', false, minutes<=5?2.10:minutes<=10?3.20:minutes<=15?3.70:4.20);
+    tickets.push({name:'Start/Stop', price: ssPrice, note:'Czas liczony wg rozkładu, nie rzeczywistego przejazdu'});
+    tickets.push({name:'40 min (elektron.)', price: tPrice('40e',isUlg,isUlg?2.60:5.20), note:'Zapas na przesiadkę'});
+  } else if (minutes <= 40) {
+    tickets.push({name:'40 min (elektroniczny)', price: tPrice('40e',isUlg,isUlg?2.60:5.20), note:'Idealny do '+minutes+' min', best:true});
+    ssPrice = isUlg
+      ? tPrice(minutes<=30?'ss30':'ss40', true, minutes<=30?2.35:2.60)
+      : tPrice(minutes<=30?'ss30':'ss40', false, minutes<=30?4.70:5.20);
+    tickets.push({name:'Start/Stop', price: ssPrice, note:'Czas liczony wg rozkładu, nie rzeczywistego przejazdu'});
+    tickets.push({name:'120 min (elektron.)', price: tPrice('120e',isUlg,isUlg?3.30:6.60), note:'Zapas + przesiadka w mieście'});
+  } else {
+    tickets.push({name:'120 min (elektroniczny)', price: tPrice('120e',isUlg,isUlg?3.30:6.60), note:'Wystarczy do '+minutes+' min', best:true});
+    ssPrice = isUlg
+      ? tPrice(minutes<=60?'ss60':'ss120', true, minutes<=60?2.85:3.30)
+      : tPrice(minutes<=60?'ss60':'ss120', false, minutes<=60?5.70:6.60);
+    tickets.push({name:'Start/Stop', price: ssPrice, note:'Czas liczony wg rozkładu, nie rzeczywistego przejazdu'});
+    tickets.push({name:'Dzienny', price: tPrice('dzi',isUlg,isUlg?6.50:13.00), note:'Jeśli planujesz powrót'});
+  }
+  return tickets;
+}
+
+function renderRouteTickets(area, fromName, toName, minutes, dist, fromStop, toStop, isUlg, exact) {
+  var fmtP = function(n) { return n.toFixed(2).replace('.',',') + ' zł'; };
+  var discount = isUlg ? 'ulgowy' : 'normalny';
+  var tickets = recommendTickets(minutes, discount);
+
+  var timeLabel = exact
+    ? 'Czas przejazdu wg rozkładu: <strong>' + minutes + ' min</strong>'
+    : 'Szacowany czas przejazdu: ~<strong>' + minutes + ' min</strong> (brak bezpośredniego połączenia w rozkładzie — wartość orientacyjna)';
+
+  var distLabel = fromStop && toStop
+    ? 'Odległość w linii prostej: ~' + haversine(fromStop.lat, fromStop.lon, toStop.lat, toStop.lon).toFixed(1) + ' km'
+    : '';
+
+  var ticketsHtml = tickets.map(function(t) {
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">'
+      + '<div style="flex:1;">'
+      + (t.best ? '<span style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:3px;display:block;">NAJLEPSZY WYBÓR</span>' : '')
+      + '<div style="font-weight:600;font-size:15px;">' + escHtml(t.name) + '</div>'
+      + (t.note ? '<div style="font-size:12px;color:var(--muted);margin-top:2px;">' + escHtml(t.note) + '</div>' : '')
+      + '</div>'
+      + '<div style="font-size:16px;font-weight:700;white-space:nowrap;color:var(--text);">' + fmtP(t.price) + '</div>'
+      + '</div>';
+  }).join('');
+
+  var disclaimer = exact
+    ? '<em style="font-size:12px;color:var(--muted);">Czas z rozkładu jazdy GZM dotyczy najszybszego bezpośredniego połączenia. Przy przesiadkach weź bilet z zapasem czasu.</em>'
+    : '<em style="font-size:12px;color:var(--muted);">⚠️ Czas orientacyjny. Sprawdź dokładny rozkład na rj.transportgzm.pl przed zakupem biletu.</em>';
+
+  area.innerHTML =
+    '<div class="route-result">'
+    + '<div class="route-result-header"><span class="rr-from">'+escHtml(fromName)+'</span><span class="rr-arrow"> → </span><span class="rr-to">'+escHtml(toName)+'</span></div>'
+    + '<div class="route-result-body">'
+    + '<div style="font-size:13px;color:var(--muted);margin-bottom:4px;">' + timeLabel + (distLabel ? ' &nbsp;·&nbsp; ' + distLabel : '') + '</div>'
+    + ticketsHtml
+    + '<div style="margin-top:10px;">' + disclaimer + '</div>'
+    + '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">'
+    + '<a href="https://rj.transportgzm.pl/mapa/?lang=pl" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--border-focus);border-radius:6px;">Mapa i rozkład ZTM</a>'
+    + '<a href="https://transportgzm.pl/price-list/" target="_blank" style="font-size:12px;color:var(--blue);text-decoration:none;padding:5px 10px;border:1px solid var(--border-focus);border-radius:6px;">Kup bilet online</a>'
+    + '</div>'
+    + '</div></div>';
+}
+
+function analyzeRoute() {
+  var fromName = document.getElementById("inp-from").value.trim();
+  var toName   = document.getElementById("inp-to").value.trim();
+  if (!fromName || !toName) { alert("Wpisz przystanek początkowy i docelowy."); return; }
+
+  var area  = document.getElementById("route-ai-area");
+  var isUlg = routeDiscount === 'ulgowy';
+
+  var fromStop = getStopInfo(fromName);
+  var toStop   = getStopInfo(toName);
+
+  if (!fromStop || !toStop) {
+    var fmtP = function(n) { return n.toFixed(2).replace('.',',') + ' zł'; };
+    area.innerHTML =
+      '<div class="route-result"><div class="route-result-header">'
+      + '<span class="rr-from">'+escHtml(fromName)+'</span><span class="rr-arrow"> → </span><span class="rr-to">'+escHtml(toName)+'</span>'
+      + '</div><div class="route-result-body"><div class="rr-text">'
+      + 'Nie znaleziono jednego z przystanków w bazie. Sprawdź pisownię lub skorzystaj z rozkładu jazdy.<br><br>'
+      + 'Standardowe bilety elektroniczne (' + (isUlg?'ulgowe':'normalne') + '):<br>'
+      + '• <strong>20 minut</strong> ' + fmtP(tPrice('20e',isUlg,isUlg?2.10:4.20))
+      + ' | <strong>40 minut</strong> ' + fmtP(tPrice('40e',isUlg,isUlg?2.60:5.20))
+      + ' | <strong>120 minut</strong> ' + fmtP(tPrice('120e',isUlg,isUlg?3.30:6.60)) + '<br>'
+      + '• <strong>Podróż Start/Stop</strong> — od ' + fmtP(tPrice('ss5',isUlg,isUlg?1.05:2.10)) + ' (czas wg rozkładu jazdy)'
+      + '</div></div></div>';
+    return;
+  }
+
+  // Show loading state
+  area.innerHTML = '<div class="route-result"><div style="padding:16px;color:var(--muted);font-size:14px;">Sprawdzam rozkład jazdy…</div></div>';
+
+  var fromIds = getAllStopIds(fromName).join(',');
+  var toIds   = getAllStopIds(toName).join(',');
+
+  fetch('/api/travel-time?from=' + encodeURIComponent(fromIds) + '&to=' + encodeURIComponent(toIds))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.minutes && data.minutes > 0) {
+        renderRouteTickets(area, fromName, toName, data.minutes, null, fromStop, toStop, isUlg, true);
+      } else {
+        // No direct connection in schedule — estimate from distance
+        var dist = haversine(fromStop.lat, fromStop.lon, toStop.lat, toStop.lon);
+        var estMin = Math.max(3, Math.round(dist * 3.5));
+        renderRouteTickets(area, fromName, toName, estMin, dist, fromStop, toStop, isUlg, false);
+      }
+    })
+    .catch(function() {
+      var dist = haversine(fromStop.lat, fromStop.lon, toStop.lat, toStop.lon);
+      var estMin = Math.max(3, Math.round(dist * 3.5));
+      renderRouteTickets(area, fromName, toName, estMin, dist, fromStop, toStop, isUlg, false);
+    });
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function md2html(s) {
+  return s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g,'<em>$1</em>')
+          .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+// ═══════════════════════════════════════════════════════════
+// WIZARD
+// ═══════════════════════════════════════════════════════════
+var WZ = {type:null, discount:'normalny', variant:null};
+
+function wzStep(n) {
+  [1,2,3,4].forEach(function(i){ document.getElementById('wz-step-'+i).style.display = i===n?'':'none'; });
+  var pct=[25,50,75,100][n-1];
+  document.getElementById('prog-fill').style.width=pct+'%';
+  [1,2,3,4].forEach(function(i){
+    var el=document.getElementById('ps-'+i); if(el) el.classList.toggle('active',i<=n);
+  });
+  if(n===3) buildVariants();
+  if(n===4) buildResult();
+}
+
+function selectType(t,btn) {
+  WZ.type=t;
+  document.querySelectorAll('#wz-step-1 .option-card').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+  setTimeout(function(){wzStep(2);},220);
+}
+
+function selectDiscount(d,btn) {
+  WZ.discount=d;
+  document.querySelectorAll('#wz-step-2 .option-card').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+  setTimeout(function(){wzStep(3);},220);
+}
+
+var VARIANTS = {
+  jednorazowy:[
+    {val:'20e',label:'20 minut (elektroniczny)',desc:'Przesiadki OK',norm:4.20,ulg:2.10,scope:'20 min od zakupu, cała sieć',chips:['Aplikacja mobilna','Kasownik w pojeździe'],info:'Tańszy o 0,40 zł od papierowego. Kupujesz w aplikacji Transport GZM lub bezpośrednio w kasowniku w pojeździe.'},
+    {val:'20p',label:'20 minut (papierowy)',desc:'Przesiadki OK',norm:4.60,ulg:2.30,scope:'20 min od skasowania',chips:['Punkt sprzedaży (kiosk)','Automat biletowy','POP'],info:'Kasuj natychmiast po wejściu do pojazdu. Niedostępny w aplikacji ani kasowniku.'},
+    {val:'40e',label:'40 minut (elektroniczny)',desc:'Przesiadki OK',norm:5.20,ulg:2.60,scope:'40 min od zakupu, cała sieć',chips:['Aplikacja mobilna','Kasownik w pojeździe'],info:'Kupujesz w aplikacji Transport GZM lub bezpośrednio w kasowniku w pojeździe.'},
+    {val:'40p',label:'40 minut (papierowy)',desc:'Przesiadki OK',norm:5.60,ulg:2.80,scope:'40 min od skasowania',chips:['Punkt sprzedaży (kiosk)','Automat biletowy','POP'],info:'Kasuj natychmiast po wejściu. Niedostępny w aplikacji ani kasowniku.'},
+    {val:'120e',label:'120 minut (elektroniczny)',desc:'Przesiadki OK',norm:6.60,ulg:3.30,scope:'120 min od zakupu, cała sieć',chips:['Aplikacja mobilna','Kasownik w pojeździe'],info:'Kupujesz w aplikacji Transport GZM lub bezpośrednio w kasowniku w pojeździe.'},
+    {val:'120p',label:'120 minut (papierowy)',desc:'Przesiadki OK',norm:7.00,ulg:3.50,scope:'120 min od skasowania',chips:['Punkt sprzedaży (kiosk)','Automat biletowy','POP'],info:'Kasuj natychmiast po wejściu. Niedostępny w aplikacji ani kasowniku.'},
+    {val:'grpe',label:'Grupowy elektroniczny',desc:'Do 5 osób, 120 min',norm:12.80,ulg:6.40,scope:'120 min, do 5 osób, cała sieć',chips:['Do 5 osób','Aplikacja mobilna','Kasownik w pojeździe'],info:'Wszyscy na bilecie ulgowym muszą posiadać uprawnienie.'},
+    {val:'grpp',label:'Grupowy papierowy',desc:'Do 5 osób, 120 min',norm:13.80,ulg:6.90,scope:'120 min, do 5 osób',chips:['Do 5 osób','Tylko automat biletowy'],info:'Dostępny wyłącznie w automatach biletowych. Nie w kioskach ani aplikacji.'},
+  ],
+  'start-stop':[
+    {val:'ss5',label:'do 5 min',desc:'',norm:2.10,ulg:1.05,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu. Dzienna agregacja: jeśli suma opłat przekroczy cenę biletu \'Dziennego\', system pobierze tylko tyle.'},
+    {val:'ss10',label:'5–10 min',desc:'',norm:3.20,ulg:1.60,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss15',label:'10–15 min',desc:'',norm:3.70,ulg:1.85,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss20',label:'15–20 min',desc:'',norm:4.20,ulg:2.10,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss30',label:'20–30 min',desc:'',norm:4.70,ulg:2.35,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss40',label:'30–40 min',desc:'',norm:5.20,ulg:2.60,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss60',label:'40–60 min',desc:'',norm:5.70,ulg:2.85,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+    {val:'ss120',label:'60–120 min',desc:'',norm:6.60,ulg:3.30,scope:'Taryfa czasowa Start/Stop',chips:['Aplikacja Transport GZM','Kasownik w pojeździe','Czas wg rozkładu'],info:'Czas liczony wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy), nie rzeczywistego przejazdu.'},
+  ],
+  pakietowy:[
+    {val:'p20',label:'Pakiet 20 przejazdów',desc:'3,00 zł/przejazd · 180 dni',norm:60,ulg:30,scope:'20 przejazdów, cała sieć, 180 dni',chips:['Bez przesiadek','Imienny','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Każdy przejazd rejestruj w kasowniku lub w aplikacji.'},
+    {val:'p40',label:'Pakiet 40 przejazdów',desc:'2,75 zł/przejazd · 180 dni',norm:110,ulg:55,scope:'40 przejazdów, cała sieć, 180 dni',chips:['Bez przesiadek','Imienny','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Każdy przejazd rejestruj w kasowniku lub w aplikacji.'},
+    {val:'p80',label:'Pakiet 80 przejazdów',desc:'2,50 zł/przejazd · 180 dni',norm:200,ulg:100,scope:'80 przejazdów, cała sieć, 180 dni',chips:['Bez przesiadek','Imienny','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Każdy przejazd rejestruj w kasowniku lub w aplikacji.'},
+  ],
+  sredniookresowy:[
+    {val:'dzi',label:'Dzienny',desc:'Do 23:59 danego dnia',norm:13,ulg:6.50,scope:'Cała sieć, do 23:59',chips:['Sob/święta: +1 osoba gratis','Aplikacja mobilna','Kasownik (wybrane)','Portal transportgzm.pl','Punkt sprzedaży','POP','Automat'],info:'W dni wolne bilet normalny uprawnia właściciela i 1 osobę towarzyszącą. Papierowy kasuj w kasowniku w pojeździe.'},
+    {val:'24h',label:'Metrobilet 24h',desc:'Imienny · 24h + pociągi KŚ/POLREGIO',norm:24,ulg:12,scope:'Cała sieć + linie kolejowe KŚ/POLREGIO w GZM',chips:['Pociągi KŚ/POLREGIO','Imienny','Portal / aplikacja / POP / automat'],info:'Imienny — wpisz imię i nazwisko. Niedostępny w kasowniku w pojeździe. Papierowy tylko w wybranych automatach biletowych.'},
+  ],
+  dlugookresowy:[
+    {val:'m30',label:'Metrobilet Miasto 30',desc:'1 gmina + kolej, 30 dni',norm:119,ulg:59.50,scope:'1 gmina + pociągi KŚ/POLREGIO, 30 dni',chips:['1 gmina','+ kolej KŚ/POLREGIO','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe ani w zwykłych kioskach. Tylko elektroniczny — imienny.'},
+    {val:'m90',label:'Miasto 90',desc:'1 gmina, 90 dni',norm:300,ulg:150,scope:'1 gmina, 90 dni',chips:['1 gmina','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'2m30',label:'Metrobilet 2 Miasta 30',desc:'2 graniczące gminy + kolej, 30 dni',norm:149,ulg:74.50,scope:'2 graniczące gminy + pociągi, 30 dni',chips:['2 gminy','+ kolej KŚ/POLREGIO','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'2m90',label:'2 Miasta 90',desc:'2 graniczące gminy, 90 dni',norm:380,ulg:190,scope:'2 graniczące gminy, 90 dni',chips:['2 gminy','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'obs30',label:'Metrobilet Obszarowy 30',desc:'Cała sieć + opcja kolejowa, 30 dni',norm:189,ulg:94.50,scope:'Cała sieć + kolej 3–6 gmin, 30 dni',chips:['Cała sieć','Opcja kolejowa KŚ/POLREGIO','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'s7',label:'Sieć 7 imienny',desc:'Cała sieć, 7 dni — imienny',norm:60,ulg:30,scope:'Cała sieć, 7 dni',chips:['Cała sieć','Imienny','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny. Wymaga podania imienia i nazwiska przy zakupie.'},
+    {val:'s7ok',label:'Sieć 7 na okaziciela',desc:'Cała sieć, 7 dni — na okaziciela',norm:63,ulg:31.50,scope:'Cała sieć, 7 dni',chips:['Cała sieć','Na okaziciela (anonimowy)','Portal / aplikacja Transport GZM / POP / automat'],info:'Wariant anonimowy — nie wymaga danych osobowych, może być użyty przez dowolną osobę. Niedostępny w kasowniku w pojeździe.'},
+    {val:'ms30',label:'Metrobilet Sieć 30',desc:'Cała sieć + wszystkie pociągi, 30 dni',norm:249,ulg:124.50,scope:'Cała sieć + KŚ i POLREGIO, 30 dni',chips:['Cała sieć','Wszystkie pociągi KŚ/POLREGIO','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Najszerszy zasięg na 30 dni. Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'s90',label:'Sieć 90',desc:'Cała sieć, 90 dni',norm:460,ulg:230,scope:'Cała sieć, 90 dni',chips:['Cała sieć','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny.'},
+    {val:'s180',label:'Sieć 180',desc:'Cała sieć, 180 dni — 3,33 zł/dzień',norm:600,ulg:300,scope:'Cała sieć, 180 dni',chips:['Cała sieć','Najtaniej/dzień','Portal / aplikacja Transport GZM / POP / automat / punkt sprzedaży'],info:'Niedostępny w kasowniku w pojeździe. Tylko elektroniczny — imienny. Brak zwrotu po rozpoczęciu ważności.'},
+  ]
+};
+
+function buildVariants() {
+  var titles={jednorazowy:'Wybierz bilet czasowy','start-stop':'Podróż Start/Stop — wybierz przedział',pakietowy:'Pakiet 20, 40 lub 80 przejazdów',sredniookresowy:'Dzienny czy Metrobilet 24h?',dlugookresowy:'Wybierz Metrobilet lub bilet sieciowy'};
+  document.getElementById('wz3-title').textContent=titles[WZ.type]||'Wybierz wariant';
+  var list=VARIANTS[WZ.type]||[];
+  var cols=WZ.type==='jednorazowy'||WZ.type==='dlugookresowy'?'col2':'';
+  var c=document.getElementById('wz3-opts');
+  c.className='options-grid '+cols; c.innerHTML='';
+  list.forEach(function(v){
+    var price=WZ.discount==='ulgowy'?v.ulg:v.norm;
+    var btn=document.createElement('button');
+    btn.className='option-card';
+    btn.innerHTML='<div class="check-badge"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.5" fill="none"/></svg></div>'+
+      '<div class="oc-title">'+v.label+'</div>'+(v.desc?'<div class="oc-desc">'+v.desc+'</div>':'')+
+      '<div class="oc-price">'+fmt(price)+'</div>';
+    btn.onclick=function(){
+      c.querySelectorAll('.option-card').forEach(function(b){b.classList.remove('selected');});
+      btn.classList.add('selected'); WZ.variant=v;
+      setTimeout(function(){wzStep(4);},220);
+    };
+    c.appendChild(btn);
+  });
+}
+
+function buildResult() {
+  var v=WZ.variant; if(!v) return;
+  var isU=WZ.discount==='ulgowy';
+  var price=isU?v.ulg:v.norm;
+  document.getElementById('res-name').textContent=v.label;
+  document.getElementById('res-scope').textContent=v.scope;
+  var ph='<div class="price-row"><div><div class="price-label">'+(isU?'Cena ulgowa (50%)':'Cena normalna')+'</div></div><div><div class="price-value main">'+fmt(price)+'</div></div></div>';
+  if(WZ.type==='pakietowy'){var n=parseInt(v.val.replace('p',''));ph+='<div class="price-row"><div class="price-label">Cena za 1 przejazd</div><div class="price-value">'+fmt(price/n)+'</div></div>';}
+  if(WZ.type==='dlugookresowy'){var dm={s7:7,s7ok:7,m30:30,'2m30':30,obs30:30,ms30:30,m90:90,'2m90':90,s90:90,s180:180};var d=dm[v.val];if(d)ph+='<div class="price-row"><div class="price-label">Cena za dzień</div><div class="price-value">'+fmt(price/d)+'</div></div>';}
+  document.getElementById('res-prices').innerHTML=ph;
+  var chips=(v.chips||[]).map(function(c){return '<span class="chip">'+c+'</span>';}).join('');
+  chips+='<span class="chip green">Taryfa GZM 2026</span>';
+  if(isU) chips+='<span class="chip amber">Ulgowy 50%</span>';
+  document.getElementById('res-chips').innerHTML=chips;
+  document.getElementById('res-info').innerHTML=v.info?'<strong>Ważne:</strong> '+v.info:'Dostępny w aplikacji Transport GZM, na portalu transportgzm.pl oraz w kasownikach i punktach sprzedaży.';
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPARATOR
+// ═══════════════════════════════════════════════════════════
+var ALL_TICKETS = []; // Ładowane z /api/tariff
+
+function loadTariff() {
+  fetch('/api/tariff')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      ALL_TICKETS = (data.tickets || []);
+      var lbl = document.getElementById('tariff-label');
+      if (lbl && data.tariff_label) lbl.textContent = data.tariff_label;
+      var compView = document.getElementById('view-comparator');
+      if (compView && compView.classList.contains('active')) renderComp();
+    })
+    .catch(function(e){ console.warn('[tariff] Błąd ładowania taryfy:', e); });
+}
+
+// Lookup ticket price from ALL_TICKETS; falls back to hardcoded value if not yet loaded
+function tPrice(val, isUlg, fallback) {
+  for (var i = 0; i < ALL_TICKETS.length; i++) {
+    if (ALL_TICKETS[i].val === val) return isUlg ? ALL_TICKETS[i].ulg : ALL_TICKETS[i].norm;
+  }
+  return fallback !== undefined ? fallback : 0;
+}
+
+var compDiscount='normalny', compFilter='all';
+
+function setCDisc(d) {
+  compDiscount=d;
+  document.getElementById('cd-norm').classList.toggle('active',d==='normalny');
+  document.getElementById('cd-ulg').classList.toggle('active',d==='ulgowy');
+  renderComp();
+}
+function setCFilt(f,btn) {
+  compFilter=f;
+  document.querySelectorAll('#comp-filters .filter-chip').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');
+  renderComp();
+}
+function renderComp() {
+  var list=compFilter==='all'?ALL_TICKETS:ALL_TICKETS.filter(function(t){return t.cat===compFilter;});
+  var isU=compDiscount==='ulgowy';
+  var g=document.getElementById('comp-grid'); g.innerHTML='';
+  var dm={s7:7,s7ok:7,m30:30,'2m30':30,obs30:30,ms30:30,m90:90,'2m90':90,s90:90,s180:180};
+  list.forEach(function(t){
+    var price=isU?t.ulg:t.norm;
+    var per='';
+    if(t.cat==='pakietowy'){var n=parseInt(t.val.replace('p',''));per=fmt(price/n)+' / przejazd';}
+    else if(t.cat==='dlugookresowy'&&dm[t.val]){per=fmt(price/dm[t.val])+' / dzień';}
+    var feats=(t.features||[]).map(function(f){return '<div class="compare-feat">'+f+'</div>';}).join('');
+    var card=document.createElement('div');
+    card.className='compare-card';
+    card.innerHTML='<div class="compare-card-header">'+
+      '<div class="compare-name">'+t.label+'</div><div class="compare-scope">'+t.scope+'</div></div>'+
+      '<div class="compare-body"><div class="compare-price">'+fmt(price)+'</div>'+(per?'<div class="compare-per">'+per+'</div>':'')+
+      '<div class="compare-features">'+feats+'</div></div>';
+    g.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════════
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+  document.getElementById('view-'+v).classList.add('active');
+  if(v==='comparator') renderComp();
+}
+
+function showScreen(s) {
+  ['welcome','route','wizard','ulgi'].forEach(function(n){
+    document.getElementById('screen-'+n).style.display=n===s?'':'none';
+  });
+  if(s==='wizard') wzStep(1);
+  if(s==='welcome') { wqShowStep(1); }
+}
+
+function startMode(m){ showScreen(m); }
+function fmt(n){ return n.toFixed(2).replace('.',',')+' zł'; }
+
+// INIT</script>
+
+<script>
+// ══════════════════════════════════════════════
+// WELCOME QUESTIONNAIRE — all functions
+// ══════════════════════════════════════════════
+var WQ = {ulga:null,freq:null,kolej:null,trasa:null,obszar:null,planerFrom:null,planerTo:null};
+var WQ_TOTAL = 5;
+var WQ_LABELS = ['Ulga','Częstotliwość','Kolej','Trasa','Obszar'];
+
+function wqUpdateProgress(step) {
+  var bar = document.getElementById('wq-bar');
+  if (bar) bar.style.width = Math.round(((step-1)/WQ_TOTAL)*100)+'%';
+  var lbl = document.getElementById('wq-step-labels');
+  if (!lbl) return;
+  lbl.innerHTML = WQ_LABELS.map(function(l,i){
+    var n=i+1, done=n<step, act=n===step;
+    var col=done?'var(--green)':act?'var(--blue)':'var(--slate-light)';
+    return '<span style="font-size:10px;color:'+col+';font-weight:'+(act?600:done?500:400)+';">'+(done?'✓ ':'')+l+'</span>';
+  }).join('');
+}
+
+function wqShowStep(step) {
+  for (var i=1;i<=WQ_TOTAL;i++){var el=document.getElementById('wq-'+i);if(el)el.style.display='none';}
+  ['wq-planer','wq-result'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+  var t=document.getElementById('wq-'+step);
+  if(t){
+    t.querySelectorAll('.option-card').forEach(function(b){b.classList.remove('selected');});
+    t.style.display='block';
+    t.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  wqUpdateProgress(step);
+}
+
+function wqAnswer(step, val) {
+  var keys=[null,'ulga','freq','kolej','trasa','obszar'];
+  WQ[keys[step]]=val;
+  setTimeout(function(){
+    if(step<WQ_TOTAL) wqShowStep(step+1); else wqGetRecommendation();
+  },250);
+}
+
+function wqUsePlaner() {
+  WQ.obszar='planer';
+  for(var i=1;i<=WQ_TOTAL;i++){var el=document.getElementById('wq-'+i);if(el)el.style.display='none';}
+  var pl=document.getElementById('wq-planer');
+  if(pl){pl.style.display='block';pl.scrollIntoView({behavior:'smooth',block:'nearest'});}
+  wqUpdateProgress(WQ_TOTAL+1);
+}
+
+function wqBackToQ5(){
+  WQ.obszar=null;
+  var b=document.getElementById('wq-planer-btn');if(b)b.classList.remove('selected');
+  wqShowStep(5);
+}
+
+function wqRestart(){
+  WQ={ulga:null,freq:null,kolej:null,trasa:null,obszar:null,planerFrom:null,planerTo:null,planerTime:null};
+  document.querySelectorAll('.option-card').forEach(function(b){b.classList.remove('selected');});
+  var fi=document.getElementById('wq-inp-from');if(fi)fi.value='';
+  var ti=document.getElementById('wq-inp-to');if(ti)ti.value='';
+  var tm=document.getElementById('wq-inp-time');if(tm)tm.value='';
+  wqShowStep(1);
+}
+
+function swapRoute2(){
+  var a=document.getElementById('wq-inp-from'),b=document.getElementById('wq-inp-to');
+  if(!a||!b)return;
+  var t=a.value;a.value=b.value;b.value=t;
+  t=WQ.planerFrom;WQ.planerFrom=WQ.planerTo;WQ.planerTo=t;
+}
+
+function onAcInput2(side){
+  var inp=document.getElementById("wq-inp-"+side);
+  var dd=document.getElementById("wq-ac-"+side);
+  if(!inp||!dd)return;
+  var q=inp.value;
+  if(!q||q.length<2||!gtfsLoaded){dd.style.display="none";return;}
+  var results=searchStops(q,8);
+  if(!results.length){dd.innerHTML="<div class=\"ac-empty\">Brak wynikow</div>";dd.style.display="block";return;}
+  dd.innerHTML=results.map(function(s){
+    var safe=s.name.replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+    return "<div class=\"ac-item ac-item-wqa\" data-stop=\""+safe+"\" data-side=\""+side+"\"><span class=\"ac-icon\">&#x1F68F;</span><div class=\"ac-stop-name\">"+s.name+"</div></div>";
+  }).join("");
+  dd.style.display="block";
+}
+
+function onAcKey2(e,side){
+  var dd=document.getElementById('wq-ac-'+side);
+  if(!dd||dd.style.display==='none')return;
+  var items=dd.querySelectorAll('.ac-item');
+  if(e.key==='Enter'&&items[0])items[0].click();
+  if(e.key==='Escape')dd.style.display='none';
+}
+
+function selectStop2(side,name){
+  var inp=document.getElementById('wq-inp-'+side);if(inp)inp.value=name;
+  var dd=document.getElementById('wq-ac-'+side);if(dd)dd.style.display='none';
+  WQ['planer'+(side==='from'?'From':'To')]=name;
+}
+
+// ── Event delegation for WQ ──────────────────────────────────
+document.addEventListener('click',function(e){
+  // ac-item click (stop autocomplete) — only WQ planner items
+  var acItem=e.target.closest('.ac-item-wqa');
+  if(acItem){
+    var side=acItem.dataset.side, name=acItem.dataset.stop;
+    if(side&&name) selectStop2(side,name);
+    return;
+  }
+  // option-card with data-wqa-step
+  var card=e.target.closest('[data-wqa-step]');
+  if(card){
+    card.parentElement.querySelectorAll('.option-card').forEach(function(b){b.classList.remove('selected');});
+    card.classList.add('selected');
+    wqAnswer(parseInt(card.dataset.wqaStep), card.dataset.wqaVal);
+    return;
+  }
+  // action buttons
+  var actionEl=e.target.closest('[data-wqa-action]');
+  if(actionEl){
+    var act=actionEl.dataset.wqaAction;
+    if(act==='usePlaner'){
+      actionEl.parentElement.querySelectorAll('.option-card').forEach(function(b){b.classList.remove('selected');});
+      actionEl.classList.add('selected');
+      wqUsePlaner();
+    }
+    else if(act==='backToQ5') wqBackToQ5();
+    else if(act==='getRecommendation') wqGetRecommendation();
+    else if(act==='restart') wqRestart();
+    else if(act==='swapRoute') swapRoute2();
+    return;
+  }
+  // close ac dropdowns
+  ['from','to'].forEach(function(s){
+    var dd=document.getElementById('wq-ac-'+s);
+    if(dd&&!dd.contains(e.target)&&e.target.id!=='wq-inp-'+s) dd.style.display='none';
+  });
+});
+
+document.addEventListener('input',function(e){
+  var side=e.target.dataset.wqaAc;
+  if(side) onAcInput2(side);
+});
+document.addEventListener('keydown',function(e){
+  var side=e.target.dataset.wqaAckey;
+  if(side) onAcKey2(e,side);
+});
+
+
+// ── Kanały sprzedaży — matryca z §4 Taryfy GZM ──────────────────────────────
+// Klucze to fragmenty nazw biletów z odpowiedzi AI (lowercase)
+var TICKET_CHANNELS = [
+  // Start/Stop
+  { match: ["start/stop","start-stop","podróż start"],
+    chips: ["Aplikacja Transport GZM","Kasownik w pojeździe","Karta płatnicza/NFC — anonimowo, bez konta"],
+    note: "Przy kasowniku możesz zapłacić kartą płatniczą, smartwatchem lub telefonem NFC — bez konta, anonimowo. Brak wydruku; przy kontroli przykładasz kartę do urządzenia kontrolera. Czas naliczany wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy)." },
+  // Bilety 20/40/120 min elektroniczne
+  { match: ["20 minut","40 minut","120 minut"],
+    chips: ["Aplikacja mobilna","Kasownik w pojeździe","Karta płatnicza/NFC — anonimowo, bez konta"],
+    note: "Bilet elektroniczny kupujesz w aplikacji Transport GZM lub w kasowniku w pojeździe. W pojeździe możesz zapłacić metrokartą. Opłątę można wnieść także kartą płatniczą (smartwatchem lub telefonem z NFC) anonimowo, bez konieczności zakładania konta w Systemie Transport GZM. Kasownik nie wydaje wydruku. Podczas kontroli przykładasz kartę do urządzenia kontrolera." },
+  // Grupowy elektroniczny
+  { match: ["grupowy"],
+    chips: ["Aplikacja mobilna","Kasownik w pojeździe"],
+    note: "" },
+  // Dzienny
+  { match: ["dzienny"],
+    chips: ["Aplikacja mobilna","Kasownik (wybrane)","Portal transportgzm.pl","Punkt sprzedaży","POP","Automat biletowy"],
+    note: "Bilet Dzienny dostępny najszerzej ze wszystkich biletów GZM. Papierowy kasuj natychmiast po wejściu. Możesz zapłacić kartą płatniczą w kasowniku — anonimowo, bez konta." },
+  // Metrobilet 24h
+  { match: ["metrobilet 24h","24h"],
+    chips: ["Portal transportgzm.pl","Aplikacja Transport GZM","POP","Automat biletowy (wybrane)"],
+    note: "⚠️ Niedostępny w kasowniku w pojeździe. Bilet imienny — wpisz imię i nazwisko przy zakupie." },
+  // Pakiety
+  { match: ["pakiet 20","pakiet 40","pakiet 80"],
+    chips: ["Portal transportgzm.pl","Aplikacja Transport GZM","POP","Automat biletowy","Punkt sprzedaży"],
+    note: "⚠️ Każdy przejazd rejestruj w kasowniku lub w aplikacji." },
+  // Metrobilet Miasto 30 / 2 Miasta 30
+  { match: ["metrobilet miasto","metrobilet 2 miasta","metrobilet obszarowy","metrobilet sieć"],
+    chips: ["Portal transportgzm.pl","Aplikacja Transport GZM","POP","Automat biletowy","Punkt sprzedaży"],
+    note: "⚠️ Niedostępny w kasowniku w pojeździe. Tylko bilet elektroniczny — imienny." },
+  // Sieć 7/30/90/180, Miasto 90, 2 Miasta 90
+  { match: ["sieć 7","sieć 30","sieć 90","sieć 180","miasto 90","2 miasta 90"],
+    chips: ["Portal transportgzm.pl","Aplikacja Transport GZM","POP","Automat biletowy","Punkt sprzedaży"],
+    note: "⚠️ Niedostępny w kasowniku w pojeździe. Tylko bilet elektroniczny — imienny." },
+];
+
+function getTicketChannels(ticketName) {
+  if (!ticketName) return null;
+  var tl = ticketName.toLowerCase();
+  for (var i = 0; i < TICKET_CHANNELS.length; i++) {
+    var entry = TICKET_CHANNELS[i];
+    for (var j = 0; j < entry.match.length; j++) {
+      if (tl.indexOf(entry.match[j]) >= 0) return entry;
+    }
+  }
+  return null;
+}
+function computeWQRecommendation(freq, obszar, kolej, krotka, isFree, isUlg, travelMinutes) {
+  function fmtP(n) { return n.toFixed(2).replace('.',',') + ' zł'; }
+  function p(norm, ulg) { return isUlg ? ulg : norm; }
+
+  // ── NAJTAŃSZY BILET JEDNORAZOWY NA ZNANY CZAS PRZEJAZDU ───────────────────
+  // Porównuje bilety stałe (20/40/120 min) ze stawkami Start/Stop wg rozkładu.
+  // Nigdy nie zwraca kombinacji droższej niż Dzienny (13 zł).
+  // Obsługuje wyłącznie trasy ≤120 min; dłuższe trafia w blok nadrzędności planera.
+  function wqBestSingle(minutes) {
+    // Bilety stałe (elektroniczne)
+    var fixedName, fixedNorm, fixedUlg;
+    if (minutes <= 20)       { fixedName='20 min (elektroniczny)';  fixedNorm=4.20; fixedUlg=2.10; }
+    else if (minutes <= 40)  { fixedName='40 min (elektroniczny)';  fixedNorm=5.20; fixedUlg=2.60; }
+    else                     { fixedName='120 min (elektroniczny)'; fixedNorm=6.60; fixedUlg=3.30; }
+
+    // Start/Stop — stawka za 1 przejazd wg rozkładu jazdy (§3 ust. 6 pkt 13 Taryfy)
+    var ssName, ssNorm, ssUlg;
+    if (minutes <= 5)        { ssName='Start/Stop (≤5 min)';      ssNorm=2.10; ssUlg=1.05; }
+    else if (minutes <= 10)  { ssName='Start/Stop (5–10 min)';    ssNorm=3.20; ssUlg=1.60; }
+    else if (minutes <= 20)  { ssName='Start/Stop (10–20 min)';   ssNorm=4.20; ssUlg=2.10; }
+    else if (minutes <= 30)  { ssName='Start/Stop (20–30 min)';   ssNorm=4.70; ssUlg=2.35; }
+    else if (minutes <= 60)  { ssName='Start/Stop (30–60 min)';   ssNorm=5.70; ssUlg=2.85; }
+    else                     { ssName='Start/Stop (60–120 min)';  ssNorm=6.60; ssUlg=3.30; }
+
+    var ssNote = 'Wymaga przyłożenia karty płatniczej do kasownika lub rozpoczęcia/zakończenia podróży w aplikacji przy każdym wejściu i wyjściu z pojazdu — płacisz tylko za faktyczny czas jazdy wg rozkładu.';
+    var dziennyAlt = {name:'Dzienny (elektroniczny)', price:p(13.00,6.50), note:'Jeden bilet na cały dzień (do 23:59) — opłaca się gdy planujesz więcej przejazdów. W soboty/święta bilet normalny uprawnia też 1 osobę towarzyszącą.'};
+
+    if (ssNorm < fixedNorm) {
+      // Start/Stop tańszy
+      return {
+        rec:  {name:ssName, price:p(ssNorm,ssUlg)},
+        alt1: {name:fixedName, price:p(fixedNorm,fixedUlg), note:'Wygodniejszy — kasujesz raz przy wejściu, nie musisz pamiętać o kasowaniu przy wyjściu.'},
+        alt2: dziennyAlt,
+        reason:'Na podstawie rozkładu GZM Twoja trasa zajmuje **'+minutes+' min**. Najtaniej: **'+ssName+'** za '+fmtP(p(ssNorm,ssUlg))+' — przyłóż kartę płatniczą (lub Google Pay / Apple Pay) do kasownika przy **wejściu i wyjściu** z pojazdu, albo rozpocznij/zakończ podróż w aplikacji Transport GZM. Bilet **'+fixedName+'** za '+fmtP(p(fixedNorm,fixedUlg))+' jest droższy o '+fmtP(p(fixedNorm-ssNorm,fixedUlg-ssUlg))+', ale wygodniejszy — kasujesz tylko raz.'
+      };
+    } else if (ssNorm === fixedNorm) {
+      // Remis — bilet stały wygodniejszy
+      return {
+        rec:  {name:fixedName, price:p(fixedNorm,fixedUlg)},
+        alt1: {name:'Podróż Start/Stop', price:p(ssNorm,ssUlg), note:ssNote+' Może być tańszy jeśli faktyczny czas jazdy wg rozkładu okaże się krótszy niż '+minutes+' min.'},
+        alt2: dziennyAlt,
+        reason:'Na podstawie rozkładu GZM Twoja trasa zajmuje **'+minutes+' min**. Bilet **'+fixedName+'** za '+fmtP(p(fixedNorm,fixedUlg))+' kosztuje tyle samo co Start/Stop, ale wygodniejszy — kasujesz tylko raz przy wejściu. **Start/Stop** może być taniej, gdy faktyczny czas jazdy wg rozkładu okaże się krótszy.'
+      };
+    } else {
+      // Bilet stały tańszy
+      return {
+        rec:  {name:fixedName, price:p(fixedNorm,fixedUlg)},
+        alt1: {name:'Podróż Start/Stop', price:p(ssNorm,ssUlg), note:ssNote+' Dla tej długości trasy wychodzi drożej niż bilet stały.'},
+        alt2: dziennyAlt,
+        reason:'Na podstawie rozkładu GZM Twoja trasa zajmuje **'+minutes+' min**. Najtańszy bilet to **'+fixedName+'** za '+fmtP(p(fixedNorm,fixedUlg))+'. **Start/Stop** jest tu droższy ('+fmtP(p(ssNorm,ssUlg))+'), ale możesz go użyć gdy nie masz biletu z góry — opłata nalicza się automatycznie po wyjściu z pojazdu.'
+      };
+    }
+  }
+
+  if (isFree) {
+    return {isFree: true, text: 'Twoje uprawnienie zwalnia Cię całkowicie z opłaty. Nie musisz kupować biletu, ale miej przy sobie aktualny dokument potwierdzający uprawnienie (np. legitymacja, orzeczenie, zaświadczenie). Przy kontroli biletowej okaż go kontrolerowi — przeterminowany dokument może skutkować mandatem.\n\nKarta GZM — sprawdź w Punkcie Obsługi Pasażera czy przysługuje Ci karta metropolitalna ze zniżkami lub bezpłatnymi przejazdami.\nDokument jest obowiązkowy — brak przy sobie = brak uprawnienia podczas kontroli.'};
+  }
+
+  var rec, alt1, alt2, reason;
+
+  // ── NADRZĘDNOŚĆ PLANERA ────────────────────────────────────────────────────
+  // Jeśli planer wyznaczył konkretny czas przejazdu, ma on absolutny priorytet
+  // nad wszystkimi wyborami z kroków 1–5 kreatora.
+  if (travelMinutes != null && travelMinutes > 120) {
+    // Czas z planera jest bezwzględnie nadrzędny — pojedynczy bilet 120-min nie wystarczy.
+    // Najtańsza kombinacja jednorazowa: 120 min + najtańszy bilet pokrywający pozostały czas.
+    // Dla regularnych podróżnych: Sieć 7 amortyzuje się na wielu przejazdach w ciągu tygodnia.
+    var okazjonalnie = (freq === 'okazjonalnie');
+
+    // Oblicz najtańszą kombinację biletów jednorazowych pokrywającą travelMinutes.
+    // Bilet Dzienny (13 zł) jest taniej lub równo tyle co 2×120 min (13,20 zł) i daje
+    // nieograniczone przejazdy do 23:59 — używamy go gdy kombinacja kosztuje ≥13 zł.
+    // Start/Stop: dzienny cap 13 zł — alternatywa anonimowa dla okazjonalnych.
+    var remaining = travelMinutes - 120;
+    var combo, comboPrice, comboNote;
+    if (remaining <= 20) {
+      combo = '120 min + 20 min';
+      comboPrice = p(10.80, 5.40);
+      comboNote = 'Skasuj bilet 20 min gdy mija 120 min od skasowania pierwszego.';
+    } else if (remaining <= 40) {
+      combo = '120 min + 40 min';
+      comboPrice = p(11.80, 5.90);
+      comboNote = 'Skasuj bilet 40 min gdy mija 120 min od skasowania pierwszego.';
+    } else {
+      // remaining > 40: Dzienny (13 zł) jest tańszy od 2×120 (13,20 zł) i wygodniejszy
+      combo = null;
+    }
+
+    // Czy Dzienny jest lepszy niż kombinacja biletów?
+    var dziennyBetter = (combo === null) || (comboPrice && comboPrice.norm >= 13.00);
+
+    if (okazjonalnie) {
+      var rec, alt1, alt2, reason;
+      if (kolej) {
+        // Kolej → tylko Metrobilet uprawnia do jazdy pociągiem
+        rec    = {name:'Metrobilet 24h', price:p(24,12)};
+        alt1   = {name:'Metrobilet Sieć 30', price:p(249,124.50), note:'Na 30 dni — gdy planujesz więcej przejazdów z koleją.'};
+        alt2   = {name:'Dzienny (elektroniczny)', price:p(13,6.50), note:'Taniej, ale NIE obejmuje pociągów Kolei Śląskich ani POLREGIO — tylko autobusy, tramwaje i trolejbusy GZM.'};
+        reason = '⚠️ Twoja trasa wg rozkładu GZM trwa **'+travelMinutes+' minut**. Korzystasz z pociągów Kolei Śląskich lub POLREGIO — tylko bilety **Metrobilet** uprawniają do jazdy pociągiem. Na okazjonalne długie trasy: **Metrobilet 24h** za '+fmtP(p(24,12))+' — ważny 24h od skasowania, obejmuje całą sieć GZM i pociągi KŚ/POLREGIO. Bilet imienny, kup przez portal transportgzm.pl lub aplikację Transport GZM.';
+      } else if (dziennyBetter) {
+        // Dzienny (13 zł) najtańszy lub równy — i daje cały dzień
+        rec   = {name:'Dzienny (elektroniczny)', price:p(13.00, 6.50)};
+        alt1  = {name:'Podróż Start/Stop', price:p(13.00, 6.50), note:'Dzienny limit 13 zł — płacisz tylko za pokonane odcinki wg rozkładu (max tyle co Dzienny), ale musisz rejestrować każde wejście i wyjście z pojazdu: kartą do kasownika lub przez aplikację Transport GZM.'};
+        alt2  = {name:'Sieć 7 imienny', price:p(60,30), note:'Opłaca się gdy w ciągu 7 dni planujesz więcej przejazdów — nieograniczone przejazdy po całej sieci GZM.'};
+        reason = '⚠️ Twoja trasa wg rozkładu GZM trwa **'+travelMinutes+' minut** — pojedynczy bilet 120-minutowy **nie pokryje** całego przejazdu. Najtaniej i najwygodniej: **Dzienny** za '+fmtP(p(13,6.50))+' — jeden bilet, ważny do 23:59, nieograniczone przejazdy po całej sieci. Alternatywnie **Podróż Start/Stop** ma dzienny limit też 13 zł — płacisz tylko za faktyczne odcinki, ale przy każdym wejściu/wyjściu musisz przyłożyć kartę do kasownika lub rozpocząć/zakończyć podróż w aplikacji. Jeśli planujesz więcej przejazdów w ciągu 7 dni, **Sieć 7 imienny** za '+fmtP(p(60,30))+' da Ci nieograniczone przejazdy po całej sieci.';
+      } else {
+        // Kombinacja biletów tańsza od Dziennego
+        rec   = {name:combo+' (elektroniczny)', price:comboPrice};
+        alt1  = {name:'Dzienny (elektroniczny)', price:p(13.00, 6.50), note:'Jeden bilet, ważny do 23:59 — wygodniejszy jeśli planujesz więcej przejazdów w ciągu dnia. W soboty i święta bilet normalny uprawnia też 1 osobę towarzyszącą.'};
+        alt2  = {name:'Sieć 7 imienny', price:p(60,30), note:'Opłaca się gdy w ciągu 7 dni planujesz więcej przejazdów — nieograniczone przejazdy po całej sieci GZM.'};
+        reason = '⚠️ Twoja trasa wg rozkładu GZM trwa **'+travelMinutes+' minut** — pojedynczy bilet 120-minutowy **nie pokryje** całego przejazdu. Najtaniej dla tej trasy: **'+combo+'** (łącznie '+fmtP(comboPrice)+') — '+comboNote+' Jeśli planujesz więcej przejazdów w ciągu dnia, **Dzienny** za '+fmtP(p(13,6.50))+' będzie wygodniejszy (ważny do 23:59). Na cały tydzień — **Sieć 7 imienny** za '+fmtP(p(60,30))+'.';
+      }
+      return {rec, alt1, alt2, reason};
+    } else {
+      if (kolej) {
+        // Kolej + regularny podróżny → Metrobilet Sieć 30
+        return {
+          rec:  {name:'Metrobilet Sieć 30', price:p(249,124.50)},
+          alt1: {name:'Metrobilet 24h', price:p(24,12), note:'Na jeden dzień — gdy nie jeździsz codziennie z koleją.'},
+          alt2: {name:'Metrobilet Obszarowy 30', price:p(189,94.50), note:'Tańszy, jeśli trasa kolejowa obejmuje tylko kilka gmin.'},
+          reason: '⚠️ Twoja trasa wg rozkładu GZM trwa **'+travelMinutes+' minut**. Korzystasz z pociągów Kolei Śląskich lub POLREGIO — tylko bilety **Metrobilet** uprawniają do jazdy pociągiem. **Metrobilet Sieć 30** za '+fmtP(p(249,124.50))+' daje nieograniczone przejazdy przez 30 dni na całej sieci GZM wraz z pociągami Kolei Śląskich i POLREGIO. Bilet elektroniczny, imienny — kup przez portal transportgzm.pl lub aplikację Transport GZM.'
+        };
+      }
+      // Regularny podróżny bez kolei — Sieć 7 jako główna, combo/Dzienny jako alternatywa jednorazowa
+      var cheapSingle = dziennyBetter
+        ? {name:'Dzienny (elektroniczny)', price:p(13.00, 6.50), note:'Najtaniej jednorazowo — ważny do 23:59, nieograniczone przejazdy po całej sieci.'}
+        : {name:combo+' (elektroniczny)', price:comboPrice, note:'Najtaniej dla jednorazowej trasy. '+comboNote};
+      return {
+        rec:  {name:'Sieć 7 imienny', price:p(60,30)},
+        alt1: cheapSingle,
+        alt2: {name:'Sieć 7 na okaziciela', price:p(63,31.50), note:'Wariant anonimowy (bez konta) — kupujesz w POP, automacie lub przez portal transportgzm.pl.'},
+        reason: '⚠️ Twoja trasa wg rozkładu GZM trwa **'+travelMinutes+' minut** — pojedynczy bilet 120-minutowy **nie pokryje** całego przejazdu. Najwygodniejsza opcja to **Sieć 7 imienny** za '+fmtP(p(60,30))+' — nieograniczone przejazdy przez 7 dni na całej sieci GZM. Alternatywnie jednorazowo: **'+(dziennyBetter?'Dzienny':''+combo)+'** za '+fmtP(dziennyBetter?p(13,6.50):comboPrice)+(dziennyBetter?' — ważny do 23:59.':' — '+comboNote)
+      };
+    }
+  }
+
+  if (freq === 'okazjonalnie') {
+    if (kolej) {
+      // Kolej → tylko Metrobilet uprawnia do jazdy pociągiem
+      rec    = {name:'Metrobilet 24h', price:p(24,12)};
+      alt1   = {name:'Metrobilet Sieć 30', price:p(249,124.50), note:'Na 30 dni — gdy planujesz więcej przejazdów z koleją.'};
+      alt2   = {name:'Dzienny (elektroniczny)', price:p(13,6.50), note:'Taniej, ale NIE obejmuje pociągów Kolei Śląskich ani POLREGIO — tylko autobusy, tramwaje i trolejbusy GZM.'};
+      reason = 'Korzystasz z pociągów Kolei Śląskich lub POLREGIO — tylko bilety **Metrobilet** uprawniają do jazdy pociągiem. Na okazjonalne przejazdy najlepszy jest **Metrobilet 24h** za '+fmtP(p(24,12))+' — ważny 24h od skasowania, obejmuje całą sieć GZM i pociągi KŚ/POLREGIO. Bilet imienny, kup przez portal transportgzm.pl lub aplikację Transport GZM.'+(travelMinutes!=null?' Twoja trasa wg rozkładu: **'+travelMinutes+' min**. Bilet 24h w pełni pokryje ten przejazd.':'');
+    } else if (travelMinutes != null) {
+      // Planer wyznaczył czas — użyj kalkulatora najtańszego biletu
+      // (trasy >120 min obsługiwane przez blok nadrzędności planera powyżej)
+      var best = wqBestSingle(travelMinutes);
+      rec    = best.rec;
+      alt1   = best.alt1;
+      alt2   = best.alt2;
+      reason = best.reason;
+    } else {
+      // Brak danych z planera — fallback na flagę krotka
+      var tier = krotka ? 'short' : 'medium';
+      if (tier === 'short') {
+        rec  = {name:'20 min (elektroniczny)', price:p(4.20,2.10)};
+        alt1 = {name:'Podróż Start/Stop', price:p(2.10,1.05), note:'Od '+fmtP(p(2.10,1.05))+' — nalicza opłatę za faktyczny czas wg rozkładu. Karta bezstykowa do kasownika lub aplikacja Transport GZM — bez konta.'};
+        alt2 = {name:'40 min (elektroniczny)', price:p(5.20,2.60), note:'Gdy trasa może być dłuższa lub planujesz przesiadkę — masz zapas czasu.'};
+        reason = 'Jeździsz **okazjonalnie** i masz krótkie trasy — **20 min (elektroniczny)** za '+fmtP(p(4.20,2.10))+' wystarczy na większość krótkich kursów. Użyj planera tras poniżej, żeby poznać dokładny czas i dostać jeszcze dokładniejszą rekomendację. **Podróż Start/Stop** może wyjść taniej dla bardzo krótkich kursów (już od '+fmtP(p(2.10,1.05))+' przy ≤5 min wg rozkładu).';
+      } else {
+        rec  = {name:'40 min (elektroniczny)', price:p(5.20,2.60)};
+        alt1 = {name:'120 min (elektroniczny)', price:p(6.60,3.30), note:'Gdy trasa przekracza 40 min lub jedziesz tam i z powrotem w ciągłej podróży.'};
+        alt2 = {name:'Podróż Start/Stop', price:p(4.70,2.35), note:'Może być tańszy dla tras 20–30 min wg rozkładu jazdy — płacisz za faktyczny czas.'};
+        reason = 'Przy **okazjonalnych** przejazdach i dłuższych trasach **40 min (elektroniczny)** za '+fmtP(p(5.20,2.60))+' pokryje większość kursów. Użyj planera tras poniżej, żeby dostać rekomendację skrojoną pod Twój konkretny czas przejazdu — Start/Stop lub krótszy bilet mogą wyjść taniej.';
+      }
+    }
+  } else if (freq === 'kilka_w_tygodniu') {
+    if (kolej) {
+      // Kolej → tylko Metrobilet uprawnia do jazdy pociągiem — dobierz wg zasięgu
+      var mRec, mAlt1, mAlt2, mNote;
+      if (obszar === '1miasto') {
+        mRec  = {name:'Metrobilet Miasto 30', price:p(119,59.50)};
+        mAlt1 = {name:'Metrobilet 2 Miasta 30', price:p(149,74.50), note:'Jeśli trasa przekracza granicę gminy — obejmuje 2 gminy + pociągi Kolei Śląskich/POLREGIO.'};
+        mNote = '1 gmina + pociągi Kolei Śląskich/POLREGIO, 30 dni';
+      } else if (obszar === '2miasta') {
+        mRec  = {name:'Metrobilet 2 Miasta 30', price:p(149,74.50)};
+        mAlt1 = {name:'Metrobilet Obszarowy 30', price:p(189,94.50), note:'Gdy trasa obejmuje więcej niż 2 gminy lub chcesz pełniejszego zasięgu.'};
+        mNote = '2 graniczące gminy + pociągi Kolei Śląskich/POLREGIO, 30 dni';
+      } else if (obszar === '3-6miast') {
+        mRec  = {name:'Metrobilet Obszarowy 30', price:p(189,94.50)};
+        mAlt1 = {name:'Metrobilet Sieć 30', price:p(249,124.50), note:'Pełny zasięg całej sieci GZM + wszystkie pociągi Kolei Śląskich/POLREGIO.'};
+        mNote = 'Cała sieć + opcja kolejowa Kolei Śląskich/POLREGIO, 30 dni';
+      } else {
+        mRec  = {name:'Metrobilet Sieć 30', price:p(249,124.50)};
+        mAlt1 = {name:'Metrobilet Obszarowy 30', price:p(189,94.50), note:'Tańszy, jeśli trasa kolejowa obejmuje tylko kilka gmin.'};
+        mNote = 'Cała sieć + wszystkie pociągi Kolei Śląskich/POLREGIO, 30 dni';
+      }
+      rec    = mRec;
+      alt1   = mAlt1;
+      alt2   = {name:'Metrobilet 24h', price:p(24,12), note:'Gdy jeździsz z pociągiem tylko sporadycznie — ważny 24h od skasowania.'};
+      reason = 'Korzystasz z pociągów Kolei Śląskich lub POLREGIO — tylko bilety **Metrobilet** uprawniają do jazdy pociągiem. Przy kilku kursach tygodniowo **'+mRec.name+'** ('+fmtP(mRec.price)+') — '+mNote+'. Bilet elektroniczny, imienny — kup przez portal transportgzm.pl lub aplikację Transport GZM.';
+    } else if (obszar === 'metropolia' || obszar === '3-6miast') {
+      rec  = {name:'Sieć 7 imienny', price:p(60,30)};
+      alt1 = {name:'Pakiet 40 przejazdów', price:p(110,55), note:fmtP(p(2.75,1.38))+'/kurs przez 180 dni — gdy jeździsz regularnie, ale nie każdego dnia.'};
+      alt2 = {name:'Metrobilet Sieć 30', price:p(249,124.50), note:'Gdy jeździsz ponad 4× w tygodniu.'};
+      reason = 'Podróżujesz **kilka razy w tygodniu** po całej metropolii — **Sieć 7 imienny** za '+fmtP(p(60,30))+' daje nieograniczone przejazdy przez 7 dni. Cztery takie bilety miesięcznie to '+fmtP(p(240,120))+', mniej niż Metrobilet Sieć 30. Dostępny też wariant **na okaziciela** ('+fmtP(p(63,31.50))+') — anonimowy, bez konta.';
+    } else {
+      rec  = {name:'Pakiet 40 przejazdów', price:p(110,55)};
+      alt1 = {name:'Pakiet 20 przejazdów', price:p(60,30), note:'Przy mniejszej liczbie kursów — '+fmtP(p(3.00,1.50))+'/kurs, ważny 180 dni.'};
+      alt2 = {name:'Sieć 7 imienny', price:p(60,30), note:'Gdy w danym tygodniu jeździsz codziennie — nieograniczone przejazdy przez 7 dni.'};
+      reason = 'Przy **kilku kursach tygodniowo** na lokalnych trasach **Pakiet 40 przejazdów** to tylko '+fmtP(p(2.75,1.38))+' za kurs — taniej niż bilet jednorazowy. Ważny 180 dni, kupisz w aplikacji lub na portalu transportgzm.pl. Każdy kurs rejestruj kasownikiem lub aplikacją (bilet imienny, niedostępny w kasowniku jako samodzielny zakup).';
+    }
+  } else if (freq === 'codziennie') {
+    if (obszar === '1miasto') {
+      rec = {name:'Metrobilet Miasto 30', price:p(119,59.50)};
+      if (kolej) {
+        alt1 = {name:'Metrobilet 2 Miasta 30', price:p(149,74.50), note:'Jeśli Twoja trasa przekracza granicę gminy — obejmuje 2 graniczące gminy + pociągi KŚ/POLREGIO.'};
+      } else {
+        alt1 = {name:'Miasto 90', price:p(300,150), note:fmtP(p(3.33,1.67))+'/dzień przy 90-dniowym zobowiązaniu — tańszy długoterminowo.'};
+      }
+      alt2 = {name:'Sieć 7 imienny', price:p(60,30), note:fmtP(p(240,120))+'/mies. przy 4 biletach — gdy miewasz tygodniowe przerwy w dojazdach.'};
+      reason = 'Codzienne przejazdy w jednym mieście' + (kolej ? ' z pociągiem KŚ/POLREGIO' : '') + ' — **Metrobilet Miasto 30** za '+fmtP(p(119,59.50))+' to '+fmtP(p(3.97,1.98))+'/dzień i obejmuje całą sieć w Twojej gminie' + (kolej ? ' plus kolej regionalną.' : '.') + ' Bilet elektroniczny, imienny — kup przez portal transportgzm.pl lub aplikację Transport GZM.';
+    } else if (obszar === '2miasta') {
+      rec  = {name:'Metrobilet 2 Miasta 30', price:p(149,74.50)};
+      alt1 = {name:'2 Miasta 90', price:p(380,190), note:fmtP(p(4.22,2.11))+'/dzień — tańszy przy 90-dniowym zobowiązaniu.'};
+      alt2 = {name:'Metrobilet Obszarowy 30', price:p(189,94.50), note:'Gdy trasa obejmuje więcej niż 2 gminy lub chcesz pełnego zasięgu sieci GZM.'};
+      reason = 'Codzienne przejazdy między dwoma miastami' + (kolej ? ' z pociągiem KŚ/POLREGIO' : '') + ' — **Metrobilet 2 Miasta 30** za '+fmtP(p(149,74.50))+' to '+fmtP(p(4.97,2.48))+'/dzień. Obejmuje oba graniczące miasta' + (kolej ? ' i pociągi regionalne.' : '.') + ' Bilet elektroniczny, imienny.';
+    } else if (obszar === '3-6miast') {
+      rec  = {name:'Metrobilet Obszarowy 30', price:p(189,94.50)};
+      alt1 = {name:'Metrobilet Sieć 30', price:p(249,124.50), note:'Pełny zasięg całej sieci GZM + wszystkie pociągi KŚ/POLREGIO.'};
+      alt2 = {name:'Sieć 7 imienny', price:p(60,30), note:fmtP(p(240,120))+'/mies. przy 4 biletach — gdy miewasz tygodniowe przerwy.'};
+      reason = 'Codzienne przejazdy przez kilka gmin — **Metrobilet Obszarowy 30** za '+fmtP(p(189,94.50))+' ('+fmtP(p(6.30,3.15))+'/dzień) obejmuje całą sieć GZM i opcję kolejową na Twojej trasie. Bilet elektroniczny, imienny — kup przez portal lub aplikację.';
+    } else {
+      rec  = {name:'Metrobilet Sieć 30', price:p(249,124.50)};
+      alt1 = {name:'Sieć 90', price:p(460,230), note:fmtP(p(5.11,2.56))+'/dzień — tańszy przy 90-dniowym zobowiązaniu.'};
+      alt2 = {name:'Sieć 7 imienny', price:p(60,30), note:fmtP(p(240,120))+'/mies. przy 4 biletach — gdy nie jeździsz każdego dnia roboczego.'};
+      reason = 'Codzienne przejazdy po całej metropolii' + (kolej ? ' z pociągami KŚ/POLREGIO' : '') + ' — **Metrobilet Sieć 30** za '+fmtP(p(249,124.50))+' to '+fmtP(p(8.30,4.15))+'/dzień i obejmuje nieograniczone przejazdy całą siecią GZM' + (kolej ? ' wraz z pociągami.' : '.') + ' Bilet elektroniczny, imienny — niedostępny w kasowniku w pojeździe.';
+    }
+  } else {
+    rec  = {name:'Metrobilet Sieć 30', price:p(249,124.50)};
+    alt1 = {name:'Sieć 180', price:p(600,300), note:fmtP(p(3.33,1.67))+'/dzień — najtaniej w przeliczeniu na dzień przy 6-miesięcznym zobowiązaniu.'};
+    alt2 = {name:'Sieć 90', price:p(460,230), note:fmtP(p(5.11,2.56))+'/dzień — dobry kompromis między ceną a elastycznością.'};
+    reason = 'Wielokrotne przejazdy każdego dnia — **Metrobilet Sieć 30** za '+fmtP(p(249,124.50))+' daje nieograniczony dostęp do całej sieci GZM przez 30 dni' + (kolej ? ' wraz z pociągami KŚ i POLREGIO.' : '.') + ' Im więcej kursów dziennie, tym bardziej się opłaca. Bilet elektroniczny, imienny — kup przez portal transportgzm.pl lub aplikację.';
+  }
+
+  return {rec: rec, alt1: alt1, alt2: alt2, reason: reason};
+}
+
+function wqGetRecommendation(){
+  if(WQ.obszar==="planer"){
+    WQ.planerFrom=(document.getElementById("wq-inp-from")||{}).value||"";
+    WQ.planerTo=(document.getElementById("wq-inp-to")||{}).value||"";
+    WQ.planerTime=(document.getElementById("wq-inp-time")||{}).value||"";
+    if(!WQ.planerFrom||!WQ.planerTo){alert("Wpisz przystanek początkowy i docelowy.");return;}
+  }
+  for(var i=1;i<=WQ_TOTAL;i++){var el=document.getElementById("wq-"+i);if(el)el.style.display="none";}
+  var pl=document.getElementById("wq-planer");if(pl)pl.style.display="none";
+  var res=document.getElementById("wq-result");
+  if(!res)return;
+  res.style.display="block";
+  res.scrollIntoView({behavior:"smooth",block:"nearest"});
+  wqUpdateProgress(WQ_TOTAL+1);
+  var area=document.getElementById("wq-result-area");
+  var isFree=WQ.ulga==="bezplatny", isUlg=WQ.ulga==="ulgowy";
+
+  // Resolve area from distance (synchronous)
+  var resolvedObszar = WQ.obszar;
+  var _fS = null, _tS = null;
+  if (WQ.obszar === "planer" && WQ.planerFrom && WQ.planerTo) {
+    _fS = getStopInfo(WQ.planerFrom); _tS = getStopInfo(WQ.planerTo);
+    if (_fS && _tS) {
+      var _d = haversine(_fS.lat, _fS.lon, _tS.lat, _tS.lon);
+      resolvedObszar = _d < 8 ? '1miasto' : _d < 20 ? '2miasta' : _d < 40 ? '3-6miast' : 'metropolia';
+    } else { resolvedObszar = 'metropolia'; }
+  }
+
+  if (WQ.obszar === "planer") {
+    area.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:14px;">Sprawdzam rozkład jazdy…</div>';
+    var fromIds = getAllStopIds(WQ.planerFrom).join(',');
+    var toIds   = getAllStopIds(WQ.planerTo).join(',');
+    var estMin = (_fS && _tS) ? Math.max(3, Math.round(haversine(_fS.lat,_fS.lon,_tS.lat,_tS.lon) * 3.5)) : null;
+    var nowStr = (function(){ var n=new Date(); return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); })();
+    var depTimeStr = WQ.planerTime || nowStr;
+    var timeParam = '&depTime=' + encodeURIComponent(depTimeStr);
+
+    fetch('/api/travel-time?from=' + encodeURIComponent(fromIds) + '&to=' + encodeURIComponent(toIds) + timeParam)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (data.minutes) {
+          // Direct connection found
+          wqRenderResult(area, isFree, isUlg, resolvedObszar, data.minutes, 'direct', data.depTime, data.arrTime, null);
+        } else {
+          // No direct — try RAPTOR with same departure time
+          var raptorTimeParam = '&depTime=' + encodeURIComponent(depTimeStr);
+          area.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:14px;">Szukam połączenia z przesiadkami…</div>';
+          fetch('/api/route-search?from=' + encodeURIComponent(fromIds) + '&to=' + encodeURIComponent(toIds) + raptorTimeParam)
+            .then(function(r2){ return r2.json(); })
+            .then(function(d2){
+              if (d2.found) {
+                wqRenderResult(area, isFree, isUlg, resolvedObszar, d2.totalMinutes, 'transfer', d2.depTime, d2.arrTime, d2);
+              } else {
+                wqRenderResult(area, isFree, isUlg, resolvedObszar, estMin, 'estimate', null, null, null);
+              }
+            })
+            .catch(function(){ wqRenderResult(area, isFree, isUlg, resolvedObszar, estMin, 'estimate', null, null, null); });
+        }
+      })
+      .catch(function(){ wqRenderResult(area, isFree, isUlg, resolvedObszar, estMin, 'estimate', null, null, null); });
+  } else {
+    wqRenderResult(area, isFree, isUlg, resolvedObszar, null, 'none', null, null, null);
+  }
+}
+
+function wqRenderItinerary(itin) {
+  // Render full route itinerary: legs with line/times and transfers
+  var html = '<div style="margin-bottom:14px;border:1px solid #bfdbfe;border-radius:var(--radius-sm);overflow:hidden;">';
+  // Header bar
+  var xferLabel = itin.transfers === 0 ? 'połączenie bezpośrednie' : itin.transfers + (itin.transfers === 1 ? ' przesiadka' : itin.transfers < 5 ? ' przesiadki' : ' przesiadek');
+  html += '<div style="background:#1d4ed8;color:#fff;padding:8px 14px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;">'
+    + '<span>🗺 Trasa wg rozkładu GZM</span>'
+    + '<span>' + escHtml(itin.depTime) + ' → ' + escHtml(itin.arrTime) + ' &bull; ' + itin.totalMinutes + ' min &bull; ' + xferLabel + '</span></div>';
+  html += '<div style="background:#eff6ff;padding:10px 14px;">';
+  for (var i = 0; i < itin.legs.length; i++) {
+    var leg = itin.legs[i];
+    if (leg.type === 'ride') {
+      html += '<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:6px;">'
+        + '<div style="min-width:48px;background:#1d4ed8;color:#fff;border-radius:4px;padding:2px 6px;font-size:12px;font-weight:700;text-align:center;flex-shrink:0;margin-top:1px;">'
+        + escHtml(leg.line) + '</div>'
+        + '<div style="font-size:13px;line-height:1.5;">'
+        + '<span style="color:var(--muted);">' + escHtml(leg.fromTime) + '</span> <strong>' + escHtml(leg.from) + '</strong>'
+        + ' <span style="color:var(--muted);font-size:11px;">↓ ' + leg.minutes + ' min</span><br>'
+        + '<span style="color:var(--muted);">' + escHtml(leg.toTime) + '</span> <strong>' + escHtml(leg.to) + '</strong>'
+        + '</div></div>';
+    } else if (leg.type === 'transfer') {
+      html += '<div style="display:flex;gap:10px;align-items:center;margin-bottom:6px;padding:4px 6px;background:#fef3c7;border-radius:4px;">'
+        + '<div style="min-width:48px;text-align:center;font-size:16px;flex-shrink:0;">🔄</div>'
+        + '<div style="font-size:12px;color:#92400e;">Przesiadka na <strong>' + escHtml(leg.stop) + '</strong>'
+        + ' — oczekiwanie <strong>' + leg.waitMinutes + ' min</strong></div>'
+        + '</div>';
+    }
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function wqRenderResult(area, isFree, isUlg, resolvedObszar, travelMinutes, connType, schedDepTime, schedArrTime, itinerary) {
+  // connType: 'direct' | 'transfer' | 'estimate' | 'none'
+  // Use actual travel time to refine short/long route determination
+  var resolvedKrotka = WQ.trasa === 'krotka';
+  if (travelMinutes !== null && travelMinutes !== undefined) {
+    resolvedKrotka = travelMinutes <= 20;
+  }
+
+  var result = computeWQRecommendation(WQ.freq, resolvedObszar, WQ.kolej === 'tak', resolvedKrotka, isFree, isUlg, travelMinutes);
+  var fullText = result.isFree ? result.text.replace(/\n/g,'<br>') : md2html(result.reason);
+
+  // Travel time banner (shown when planer was used)
+  var travelBannerHTML = '';
+  if (WQ.obszar === 'planer') {
+    if (connType === 'direct' && travelMinutes) {
+      var schedInfo = (schedDepTime && schedArrTime)
+        ? ' (odjazd <strong>' + schedDepTime + '</strong>, przyjazd <strong>' + schedArrTime + '</strong>)'
+        : '';
+      travelBannerHTML =
+        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;gap:10px;align-items:center;">'
+        + '<span style="font-size:18px;flex-shrink:0;">🕐</span>'
+        + '<span>Bezpośrednie połączenie <strong>' + escHtml(WQ.planerFrom) + ' → ' + escHtml(WQ.planerTo) + '</strong> wg rozkładu GZM: <strong>' + travelMinutes + ' min</strong>' + schedInfo + '. Rekomendacja uwzględnia ten czas.</span>'
+        + '</div>';
+    } else if (connType === 'transfer' && itinerary) {
+      travelBannerHTML = wqRenderItinerary(itinerary);
+    } else if (connType === 'estimate' && travelMinutes) {
+      travelBannerHTML =
+        '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;gap:10px;align-items:center;">'
+        + '<span style="font-size:18px;flex-shrink:0;">📏</span>'
+        + '<span>Brak połączenia w rozkładzie GZM do ' + (WQ.planerTime || '') + ' — szacowany czas: <strong>~' + travelMinutes + ' min</strong> (z odległości). Sprawdź inne godziny lub trasę na <a href="https://rj.transportgzm.pl" target="_blank" style="color:var(--blue);">rj.transportgzm.pl</a>.</span>'
+        + '</div>';
+    } else if (connType === 'estimate') {
+      travelBannerHTML =
+        '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;gap:10px;align-items:center;">'
+        + '<span style="font-size:18px;flex-shrink:0;">⚠️</span>'
+        + '<span>Brak danych o trasie — wpisz godzinę odjazdu i spróbuj ponownie lub sprawdź rozkład na <a href="https://rj.transportgzm.pl" target="_blank" style="color:var(--blue);">rj.transportgzm.pl</a>.</span>'
+        + '</div>';
+    }
+  }
+
+  var freqLabels={
+    okazjonalnie:"Okazjonalnie",
+    kilka_w_tygodniu:"Kilka razy/tydz.",
+    codziennie:"Codziennie",
+    wielokrotnie:"Wielokrotnie/dz."
+  };
+  var profileItems = [
+    {icon:"🎟", label: isFree?"Bezpłatny":isUlg?"Ulgowy 50%":"Normalny"},
+    {icon:"📅", label: freqLabels[WQ.freq]||WQ.freq},
+    {icon:"🚆", label: WQ.kolej==="tak"?"Z Kolejami Śląskimi/POLREGIO":"Bez kolei"},
+    {icon:"📍", label: travelMinutes ? (travelMinutes+' min' + (connType==='transfer'?' z przesiad.':connType==='direct'?' bezpośr.':' ~szacowany')) : (resolvedKrotka?"Krótkie trasy":"Długie trasy")},
+    {icon:"🗺", label: WQ.obszar==="planer"?(WQ.planerFrom+"\u2192"+WQ.planerTo):({"1miasto":"1 miasto","2miasta":"2 miasta","3-6miast":"3\u20136 miast","metropolia":"Cała Metropolia"}[resolvedObszar]||resolvedObszar)}
+  ];
+  var profileHTML = profileItems.map(function(p){
+    return '<span class="rec-profile-chip"><span class="chip-icon">'+p.icon+'</span>'+p.label+'</span>';
+  }).join("");
+
+  var showSSNote = (WQ.freq==="okazjonalnie");
+  var ssNoteHTML = showSSNote ?
+    '<div class="rec-startstop-note">'
+    +'<div class="ss-icon">💡</div>'
+    +'<div class="ss-text"><strong>Rozważ Podróż Start/Stop</strong> — płacisz tylko za faktyczny czas przejazdu wg rozkładu jazdy, nie zegarka. Przyłóż kartę NFC do kasownika z logo VISA/MASTER lub metrokartę lub kartę ŚKUP do dowolnego kasownika, albo rozpocznij/zakończ podróż w aplikacji Transport GZM.</div>'
+    +'</div>'
+    : "";
+
+  area.innerHTML =
+    '<div class="rec-result">'
+    +'<div class="rec-profile-bar">'+profileHTML+'</div>'
+    +'<div class="rec-hero">'
+    +'<div class="rec-hero-eyebrow">Rekomendacja</div>'
+    +'<div class="rec-ticket-name" id="rec-name-display">Twój bilet</div>'
+    +'<div class="rec-ticket-price" id="rec-price-display"><span>—</span></div>'
+    +'<div class="rec-where-buy" id="rec-where-display"></div>'
+    +'</div>'
+    +'<div class="rec-body">'
+    +'<div id="rec-channel-note" style="display:none;background:#fef9ec;border:1px solid #f59e0b;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:#78350f;display:flex;gap:8px;align-items:flex-start;">'
+    +'<span style="font-size:16px;flex-shrink:0;">🏪</span>'
+    +'<span class="cn-text"></span>'
+    +'</div>'
+    + travelBannerHTML
+    + ssNoteHTML
+    +'<div class="rec-reasoning" id="rec-reasoning-text">'+fullText+'</div>'
+    +'<div class="rec-alts-title">Alternatywy do rozważenia</div>'
+    +'<div class="rec-alts" id="rec-alts-grid"></div>'
+    +'</div>'
+    +'<div class="rec-actions">'
+    +'<a href="https://transportgzm.pl/price-list/" target="_blank" class="rec-action-link primary">🎫 Kup bilet online</a>'
+    +'<a href="https://transportgzm.pl/pages/punkty-obsugi-pasazera" target="_blank" class="rec-action-link">📍 Punkty Obsługi Pasażera</a>'
+    +'<a href="https://rj.transportgzm.pl/mapa/?lang=pl" target="_blank" class="rec-action-link">🗺 Rozkład jazdy</a>'
+    +'</div>'
+    +'</div>';
+
+  if (result.isFree) {
+    document.getElementById("rec-name-display").textContent = "Przejazd bezpłatny";
+    document.getElementById("rec-price-display").innerHTML = '0 <span class="price-suffix">zł</span>';
+    document.getElementById("rec-where-display").innerHTML = '<span class="rec-buy-chip">Dokument uprawniający</span>';
+    var noteEl2 = document.getElementById("rec-channel-note");
+    if (noteEl2) noteEl2.style.display = "none";
+    document.getElementById("rec-alts-grid").innerHTML = "";
+    return;
+  }
+
+  var recObj = result.rec;
+  document.getElementById("rec-name-display").textContent = recObj.name;
+  var priceStr = recObj.price != null ? (recObj.price.toFixed(2).replace('.',',') + ' <span class="price-suffix">zł</span>') : '—';
+  document.getElementById("rec-price-display").innerHTML = priceStr;
+
+  var channelEntry = getTicketChannels(recObj.name);
+  var whereBuy = channelEntry ? channelEntry.chips : ["Portal transportgzm.pl","Aplikacja Transport GZM","POP","Automat biletowy"];
+  document.getElementById("rec-where-display").innerHTML = whereBuy.map(function(w){
+    return '<span class="rec-buy-chip">'+w+'</span>';
+  }).join("");
+  var channelNote = channelEntry ? channelEntry.note : "";
+  var noteEl = document.getElementById("rec-channel-note");
+  if (noteEl) {
+    if (channelNote) { noteEl.style.display = "flex"; noteEl.querySelector(".cn-text").textContent = channelNote; }
+    else { noteEl.style.display = "none"; }
+  }
+
+  var altsGrid = document.getElementById("rec-alts-grid");
+  var altCards = "";
+  [result.alt1, result.alt2].forEach(function(alt) {
+    if (!alt) return;
+    var altPriceStr = alt.price != null ? alt.price.toFixed(2).replace('.',',') + ' zł' : '';
+    altCards += '<div class="rec-alt">'
+      +'<div class="rec-alt-name">'+escHtml(alt.name)+'</div>'
+      +(altPriceStr ? '<div class="rec-alt-price">'+altPriceStr+'</div>' : '')
+      +(alt.note ? '<div class="rec-alt-note">'+escHtml(alt.note)+'</div>' : '')
+      +'</div>';
+  });
+  altsGrid.innerHTML = altCards;
+}
+
+// ── Ulgi screen ────────────────────────────────────────────────────────
+var selectedUlga = null;
+
+// Delegate clicks on ulgi cards
+document.addEventListener('click', function(e){
+  var card = e.target.closest('.ulgi-card[data-ulga]');
+  if (!card) return;
+  var ulga = card.dataset.ulga;
+  var label = card.dataset.label || '';
+
+  // Deselect all
+  document.querySelectorAll('.ulgi-card').forEach(function(c){ c.classList.remove('selected'); });
+  card.classList.add('selected');
+  selectedUlga = ulga;
+
+  var alertEl = document.getElementById('ulgi-free-alert');
+  var contBtn = document.getElementById('ulgi-continue-btn');
+
+  if (ulga === 'bezplatny') {
+    alertEl.style.display = 'block';
+    setTimeout(function(){ alertEl.scrollIntoView({behavior:'smooth',block:'center'}); }, 80);
+    document.getElementById('ulgi-alert-title').textContent = 'Nie musisz kupować biletu!';
+    document.getElementById('ulgi-alert-text').textContent =
+      'Przysługuje Ci przejazd bezpłatny. Nie potrzebujesz biletu, ale musisz mieć przy sobie dokument potwierdzający uprawnienie i okazać go na żądanie kontrolera.';
+    var docHints = {
+      'Dziecko do 7 lat': 'Oświadczenie opiekuna towarzyszącego w podróży.',
+      'Dziecko/młodzież 7–16 lat z GZM': 'Legitymacja szkolna, mLegitymacja lub zaświadczenie potwierdzające miejsce zamieszkania na terenie GZM. Do czasu weryfikacji w POP — dokument przy sobie.',
+      'Osoba po 70. roku życia': 'Dokument tożsamości ze zdjęciem i datą urodzenia (dowód osobisty, paszport).',
+    };
+    document.getElementById('ulgi-alert-doc').textContent =
+      (docHints[label] ? '📄 ' + docHints[label] : '📄 Stosowny dokument potwierdzający uprawnienie — szczegóły w Taryfie GZM §9 ust. 1.');
+    contBtn.style.display = 'none';
+  } else {
+    alertEl.style.display = 'none';
+    contBtn.style.display = 'inline-flex';
+  }
+});
+
+function showUlgi() {
+  showScreen('ulgi');
+}
+window.showUlgi = showUlgi;
+window.showScreen = showScreen;
+window.ulgiContinue = ulgiContinue;
+
+function ulgiContinue() {
+  if (!selectedUlga) return;
+  // Pass to WQ and skip Q1 (ulga), start from Q2
+  WQ.ulga = selectedUlga;
+  // Show wizard welcome but jump to Q2
+  showScreen('welcome');
+  // Mark Q1 as answered
+  var keys = [null,'ulga','freq','kolej','trasa','obszar'];
+  // Pre-select the ulga option in wq-1
+  document.querySelectorAll('#wq-1 .option-card[data-wqa-step="1"]').forEach(function(btn){
+    btn.classList.remove('selected');
+    if (btn.dataset.wqaVal === selectedUlga) btn.classList.add('selected');
+  });
+  wqShowStep(2);
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', function(){
+  showScreen('welcome');
+  wqShowStep(1);
+  loadGtfs();
+  loadTariff();
+  renderComp();
+});
+</script>
+
+</body>
+</html>
